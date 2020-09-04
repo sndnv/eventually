@@ -7,9 +7,8 @@ import eventually.core.model.TaskSummary
 import eventually.core.model.TaskSummaryConfig
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.WordSpec
-import io.kotest.matchers.be
-import io.kotest.matchers.should
-import io.kotest.matchers.shouldNot
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -92,10 +91,10 @@ class TaskSummarySpec : WordSpec({
                 config = config
             )
 
-            summary.isNotEmpty() should be(true)
+            summary.isNotEmpty() shouldBe(true)
 
             withClue("Expired tasks sorted by priority first and execution time second") {
-                summary.expired should be(
+                summary.expired shouldBe(
                     listOf(
                         Pair(earlierExpiredSchedule.task, earlierExpiredInstance),
                         Pair(expiredSchedule.task, expiredInstance),
@@ -105,7 +104,7 @@ class TaskSummarySpec : WordSpec({
             }
 
             withClue("Upcoming tasks sorted by execution time first and priority second") {
-                summary.upcoming should be(
+                summary.upcoming shouldBe(
                     listOf(
                         Pair(upcomingSchedule.task, upcomingInstance),
                         Pair(mediumPriorityUpcomingSchedule.task, mediumPriorityUpcomingInstance),
@@ -121,20 +120,20 @@ class TaskSummarySpec : WordSpec({
             val entries = listOf(Pair(task, instance))
 
             val emptySummary = TaskSummary(expired = emptyList(), upcoming = emptyList())
-            emptySummary.isEmpty() should be(true)
-            emptySummary.isNotEmpty() should be(false)
+            emptySummary.isEmpty() shouldBe(true)
+            emptySummary.isNotEmpty() shouldBe(false)
 
             val summaryWithExpired = TaskSummary(expired = entries, upcoming = emptyList())
-            summaryWithExpired.isEmpty() should be(false)
-            summaryWithExpired.isNotEmpty() should be(true)
+            summaryWithExpired.isEmpty() shouldBe(false)
+            summaryWithExpired.isNotEmpty() shouldBe(true)
 
             val summaryWithUpcoming = TaskSummary(expired = emptyList(), upcoming = entries)
-            summaryWithUpcoming.isEmpty() should be(false)
-            summaryWithUpcoming.isNotEmpty() should be(true)
+            summaryWithUpcoming.isEmpty() shouldBe(false)
+            summaryWithUpcoming.isNotEmpty() shouldBe(true)
 
             val summaryWithBoth = TaskSummary(expired = entries, upcoming = entries)
-            summaryWithBoth.isEmpty() should be(false)
-            summaryWithBoth.isNotEmpty() should be(true)
+            summaryWithBoth.isEmpty() shouldBe(false)
+            summaryWithBoth.isNotEmpty() shouldBe(true)
         }
 
         "support retrieving all active goals" {
@@ -148,7 +147,7 @@ class TaskSummarySpec : WordSpec({
 
             val summary = TaskSummary(expired = expiredEntries, upcoming = upcomingEntries)
 
-            summary.goals() should be(listOf(goal1, goal2))
+            summary.goals() shouldBe(listOf(goal1, goal2))
         }
 
         "support retrieving the next upcoming event" {
@@ -157,7 +156,7 @@ class TaskSummarySpec : WordSpec({
             val config = TaskSummaryConfig(summarySize = TaskSummaryConfig.MinimumSummarySize)
 
             val emptySummary = TaskSummary(expired = emptyList(), upcoming = emptyList())
-            emptySummary.nextEvent(after = now) should be(null)
+            emptySummary.nextEvent(after = now) shouldBe(null)
 
             val upcomingSchedule =
                 TaskSchedule(
@@ -165,7 +164,7 @@ class TaskSummarySpec : WordSpec({
                 ).update(after = now)
 
             val upcomingInstance = upcomingSchedule.instances.values.firstOrNull()
-            upcomingInstance shouldNot be(null)
+            upcomingInstance shouldNotBe(null)
 
             val upcomingInstanceExecution = upcomingInstance!!.execution()
             val upcomingInstanceContextSwitch = upcomingInstanceExecution.minus(upcomingSchedule.task.contextSwitch)
@@ -176,15 +175,15 @@ class TaskSummarySpec : WordSpec({
                 config = config
             )
 
-            summary.isNotEmpty() should be(true)
+            summary.isNotEmpty() shouldBe(true)
 
             summary.nextEvent(
                 after = now
-            ) should be(upcomingInstanceExecution)
+            ) shouldBe(upcomingInstanceExecution)
 
             summary.nextEvent(
                 after = now.minus(upcomingSchedule.task.contextSwitch)
-            ) should be(upcomingInstanceContextSwitch)
+            ) shouldBe(upcomingInstanceContextSwitch)
         }
     }
 })

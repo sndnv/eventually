@@ -20,7 +20,8 @@ data class TaskSummary(
                 listOf(execution, contextSwitch)
             }
             .filter { it.isAfter(after) }
-            .minByOrNull { it }
+            .sortedBy { it }
+            .firstOrNull()
     }
 
     companion object {

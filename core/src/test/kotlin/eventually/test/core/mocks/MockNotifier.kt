@@ -16,7 +16,7 @@ class MockNotifier : Notifier {
         Statistic.PutInstanceContextSwitchNotification to AtomicInteger(0),
         Statistic.DeleteInstanceNotifications to AtomicInteger(0),
         Statistic.PutSummaryNotification to AtomicInteger(0),
-        Statistic.DeleteSummaryNotification to AtomicInteger(0),
+        Statistic.DeleteSummaryNotification to AtomicInteger(0)
     )
 
     override fun putInternalAlarm(instant: Instant) {
