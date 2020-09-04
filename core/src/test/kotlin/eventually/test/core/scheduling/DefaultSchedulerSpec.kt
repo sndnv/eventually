@@ -5,8 +5,7 @@ import eventually.core.model.TaskSummaryConfig
 import eventually.core.scheduling.DefaultScheduler
 import eventually.test.core.mocks.MockNotifier
 import io.kotest.core.spec.style.WordSpec
-import io.kotest.matchers.be
-import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScope
 import java.time.Duration
@@ -41,18 +40,18 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.put(task)
-            scheduler.getAsync().await().map { it.task } should be(listOf(task))
+            scheduler.getAsync().await().map { it.task } shouldBe(listOf(task))
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(1)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(1)
         }
 
         "support updating existing tasks" {
@@ -66,22 +65,22 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.put(task)
-            scheduler.getAsync().await().map { it.task } should be(listOf(task))
+            scheduler.getAsync().await().map { it.task } shouldBe(listOf(task))
 
             val updatedTask = task.copy(name = "other-name")
             scheduler.put(updatedTask)
-            scheduler.getAsync().await().map { it.task } should be(listOf(updatedTask))
+            scheduler.getAsync().await().map { it.task } shouldBe(listOf(updatedTask))
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(2)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(2)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(2)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(2)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(2)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(2)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(2)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(2)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(2)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(2)
         }
 
         "support removing existing tasks" {
@@ -95,22 +94,22 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.put(task)
-            scheduler.getAsync().await().map { it.task } should be(listOf(task))
+            scheduler.getAsync().await().map { it.task } shouldBe(listOf(task))
 
             scheduler.delete(task.id)
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(2)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(2)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(2)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(2)
         }
 
         "do nothing when removing missing tasks" {
@@ -124,19 +123,19 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.delete(task = UUID.randomUUID())
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(0)
         }
 
         "dismiss existing tasks" {
@@ -150,32 +149,32 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.put(task)
 
             val schedules = scheduler.getAsync().await()
-            schedules.map { it.task } should be(listOf(task))
+            schedules.map { it.task } shouldBe(listOf(task))
 
             val instances = schedules.first().instances
-            instances.size should be(1)
+            instances.size shouldBe(1)
 
             val instance = instances.values.first()
 
             scheduler.dismiss(task.id, instance.id)
 
             val updatedSchedules = scheduler.getAsync().await()
-            updatedSchedules.map { it.task } should be(listOf(task))
+            updatedSchedules.map { it.task } shouldBe(listOf(task))
 
-            updatedSchedules.first().instances should be(emptyMap())
+            updatedSchedules.first().instances shouldBe(emptyMap())
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(2)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(2)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(2)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(1)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(2)
         }
 
         "do nothing when dismissing missing tasks" {
@@ -189,17 +188,17 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.dismiss(task.id, instance = UUID.randomUUID())
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(0)
         }
 
         "postpone existing tasks" {
@@ -213,15 +212,15 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.put(task)
 
             val schedules = scheduler.getAsync().await()
-            schedules.map { it.task } should be(listOf(task))
+            schedules.map { it.task } shouldBe(listOf(task))
 
             val instances = schedules.first().instances
-            instances.size should be(1)
+            instances.size shouldBe(1)
 
             val instance = instances.values.first()
 
@@ -231,21 +230,21 @@ class DefaultSchedulerSpec : WordSpec({
             scheduler.postpone(task.id, instance.id, by = postponedDuration)
 
             val updatedSchedules = scheduler.getAsync().await()
-            updatedSchedules.map { it.task } should be(listOf(task))
+            updatedSchedules.map { it.task } shouldBe(listOf(task))
 
             val updatedInstances = updatedSchedules.first().instances
-            updatedInstances.size should be(1)
+            updatedInstances.size shouldBe(1)
 
             val updatedInstance = updatedInstances.values.first()
-            updatedInstance.postponed should be(postponedDuration.multipliedBy(3))
+            updatedInstance.postponed shouldBe(postponedDuration.multipliedBy(3))
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(4)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(4)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(4)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(3)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(4)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(4)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(4)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(4)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(4)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(3)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(4)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(4)
         }
 
         "do nothing when postponing missing tasks" {
@@ -259,17 +258,17 @@ class DefaultSchedulerSpec : WordSpec({
                 scope = scope
             )
 
-            scheduler.getAsync().await() should be(emptyList())
+            scheduler.getAsync().await() shouldBe(emptyList())
 
             scheduler.postpone(task.id, instance = UUID.randomUUID(), by = Duration.ofSeconds(1))
 
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] should be(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] should be(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(0)
+            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(0)
         }
     }
 })

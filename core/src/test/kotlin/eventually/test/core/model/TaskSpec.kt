@@ -3,8 +3,7 @@ package eventually.test.core.model
 import eventually.core.model.Task
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.WordSpec
-import io.kotest.matchers.be
-import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -19,7 +18,7 @@ class TaskSpec : WordSpec({
             val expected = now.plus(Duration.ofSeconds(42))
             val schedule = Task.Schedule.Once(instant = expected)
 
-            schedule.next(after = now) should be(expected)
+            schedule.next(after = now) shouldBe(expected)
         }
 
         "support scheduling repeating events" {
@@ -42,9 +41,9 @@ class TaskSpec : WordSpec({
                 )
 
                 if (originalSchedule.isAfter(now)) {
-                    futureSchedule.next(after = now) should be(originalSchedule)
+                    futureSchedule.next(after = now) shouldBe(originalSchedule)
                 } else {
-                    futureSchedule.next(after = now) should be(expectedNext)
+                    futureSchedule.next(after = now) shouldBe(expectedNext)
                 }
             }
 
