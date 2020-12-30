@@ -2,7 +2,6 @@ package eventually.test.core.model
 
 import eventually.core.model.Task
 import eventually.core.model.TaskSchedule
-import eventually.test.core.mocks.MockNotifier
 import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.WordSpec
@@ -11,114 +10,159 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.startWith
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
-import java.util.*
+import java.time.ZoneOffset
+import java.util.UUID
 
 class TaskScheduleSpec : WordSpec({
     "A TaskSchedule" should {
         val task = Task(
-            id = UUID.randomUUID(),
+            id = 42,
             name = "test-task",
             description = "test-description",
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
-                time = LocalTime.of(0, 15),
+                start = LocalTime.of(0, 5).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
                 every = Duration.ofMinutes(20)
             ),
-            priority = Task.Priority.High,
-            contextSwitch = Duration.ofMinutes(5)
+            contextSwitch = Duration.ofMinutes(5),
+            isActive = true
         )
 
+        fun after(): Instant = LocalTime.of(0, 50).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
+
         "support updating scheduling" {
-            val now = Instant.now()
+            val after = after()
+            val within = Duration.ofMinutes(5)
 
             val schedule = TaskSchedule(task)
-            schedule.task shouldBe(task)
-            schedule.instances shouldBe(emptyMap())
+            schedule.task shouldBe (task)
+            schedule.instances shouldBe (emptyMap())
 
-            val updatedSchedule = schedule.update(after = now)
-            updatedSchedule.task shouldBe(task)
-            updatedSchedule.instances.size shouldBe(1)
+            val updatedSchedule = schedule.update(after = after, within = within)
+            updatedSchedule.task shouldBe (task)
+            updatedSchedule.instances.size shouldBe (1)
 
             val instance = updatedSchedule.instances.values.first()
-            instance.instant shouldBe(task.schedule.next(after = now))
-            instance.postponed shouldBe(null)
+            instance.instant shouldBe (task.schedule.next(after = after, within = within).first())
+            instance.postponed shouldBe (null)
+        }
+
+        "not update scheduling if a task is not active" {
+            val after = after()
+            val within = Duration.ofMinutes(5)
+
+            val inactiveTask = task.copy(isActive = false)
+
+            val schedule = TaskSchedule(inactiveTask)
+            schedule.task shouldBe (inactiveTask)
+            schedule.instances shouldBe (emptyMap())
+
+            val updatedSchedule = schedule.update(after = after, within = within)
+            updatedSchedule.task shouldBe (inactiveTask)
+            schedule.instances shouldBe (emptyMap())
         }
 
         "not update scheduling if a task's next instance already exists" {
-            val now = Instant.now()
+            val after = after()
+            val within = Duration.ofMinutes(5)
 
-            val schedule = TaskSchedule(task).update(after = now)
-            schedule.task shouldBe(task)
-            schedule.instances.size shouldBe(1)
+            val schedule = TaskSchedule(task).update(after = after, within = within)
+            schedule.task shouldBe (task)
+            schedule.instances.size shouldBe (1)
 
-            val updatedSchedule = schedule.update(after = now)
-            updatedSchedule.task shouldBe(task)
-            updatedSchedule.instances.size shouldBe(1)
+            val updatedSchedule = schedule.update(after = after, within = within)
+            updatedSchedule.task shouldBe (task)
+            updatedSchedule.instances.size shouldBe (1)
 
             val instance = updatedSchedule.instances.values.first()
-            instance.instant shouldBe(task.schedule.next(after = now))
-            instance.postponed shouldBe(null)
+            instance.instant shouldBe (task.schedule.next(after = after, within = within).first())
+            instance.postponed shouldBe (null)
         }
 
-        "not update scheduling if a task's next instance was already dismissed" {
-            val now = Instant.now()
+        "not update scheduling if a task's next instance was already dismissed (non-repeating schedules)" {
+            val after = after()
+            val within = Duration.ofMinutes(5)
 
-            val schedule = TaskSchedule(task).update(after = now)
-            schedule.task shouldBe(task)
-            schedule.instances.size shouldBe(1)
+            val updatedTask = task.copy(
+                schedule = Task.Schedule.Once(
+                    instant = LocalTime.of(0, 5).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
+                )
+            )
+
+            val schedule = TaskSchedule(updatedTask).update(after = after, within = within)
+            schedule.task shouldBe (updatedTask)
+            schedule.instances.size shouldBe (1)
 
             val instance = schedule.instances.values.first()
 
             val updatedSchedule = schedule.dismiss(instance = instance.id)
-            updatedSchedule.task shouldBe(task)
-            updatedSchedule.instances shouldBe(emptyMap())
+            updatedSchedule.task shouldBe (updatedTask)
+            updatedSchedule.instances shouldBe (emptyMap())
 
-            val finalSchedule = updatedSchedule.update(after = now)
-            finalSchedule.task shouldBe(task)
-            finalSchedule.instances shouldBe(emptyMap())
+            val finalSchedule = updatedSchedule.update(after = after, within = within)
+            finalSchedule.task shouldBe (updatedTask)
+            finalSchedule.instances shouldBe (emptyMap())
         }
 
         "support providing the next task instance" {
-            val now = Instant.now()
+            val after = after()
+            val within = Duration.ofMinutes(5)
 
-            val schedule = TaskSchedule(task).update(after = now)
-            schedule.instances.size shouldBe(1)
+            val schedule = TaskSchedule(task).update(after = after, within = within)
+            schedule.instances.size shouldBe (1)
 
             val instance = schedule.instances.values.first()
-            when (val next = schedule.next(after = now)) {
+            when (val next = schedule.next(after = after).firstOrNull()) {
                 null -> fail("Expected next task instance but none found")
                 else -> {
-                    next.first shouldBe(instance)
-                    next.second.isAfter(now) shouldBe(true)
+                    next.first shouldBe (instance)
+                    next.second.isAfter(after) shouldBe (true)
                 }
             }
 
             val multiInstanceSchedule = schedule
-                .update(after = now.plus(Duration.ofMinutes(15)))
-                .update(after = now.plus(Duration.ofMinutes(25)))
-                .update(after = now.plus(Duration.ofMinutes(35)))
+                .update(after = after.plus(Duration.ofMinutes(15)), within = within)
+                .update(after = after.plus(Duration.ofMinutes(25)), within = within)
+                .update(after = after.plus(Duration.ofMinutes(45)), within = within)
 
-            multiInstanceSchedule.instances.size shouldBe(3)
+            multiInstanceSchedule.instances.size shouldBe (3)
 
-            when (val next = multiInstanceSchedule.next(after = now)) {
+            when (val next = multiInstanceSchedule.next(after = after).firstOrNull()) {
                 null -> fail("Expected next task instance but none found")
                 else -> {
-                    next.first shouldBe(instance)
-                    next.second.isAfter(now) shouldBe(true)
+                    next.first shouldBe (instance)
+                    next.second.isAfter(after) shouldBe (true)
+                }
+            }
+
+            val dismissedInstanceSchedule = TaskSchedule(
+                task = task,
+                instances = emptyMap(),
+                dismissed = multiInstanceSchedule.instances.map { it.value.instant }
+            ).update(after = after.plus(Duration.ofMinutes(45)), within = within)
+
+            when (val next = dismissedInstanceSchedule.next(after = after).firstOrNull()) {
+                null -> fail("Expected next task instance but none found")
+                else -> {
+                    val every = (task.schedule as Task.Schedule.Repeating).every
+                    next.first.instant shouldBe (instance.instant.plus(every.multipliedBy(3)))
+                    next.second.isAfter(after) shouldBe (true)
                 }
             }
         }
 
         "support dismissing task instances" {
-            val now = Instant.now()
+            val after = after()
+            val within = Duration.ofMinutes(5)
 
-            val schedule = TaskSchedule(task).update(after = now)
-            schedule.instances.size shouldBe(1)
+            val schedule = TaskSchedule(task).update(after = after, within = within)
+            schedule.instances.size shouldBe (1)
 
             val instance = schedule.instances.keys.first()
             val updatedSchedule = schedule.dismiss(instance)
-            updatedSchedule.instances shouldBe(emptyMap())
+            updatedSchedule.instances shouldBe (emptyMap())
         }
 
         "fail to dismiss missing task instances" {
@@ -132,27 +176,28 @@ class TaskScheduleSpec : WordSpec({
         }
 
         "support postponing task instances" {
-            val now = Instant.now()
+            val after = after()
+            val within = Duration.ofMinutes(5)
 
-            val schedule = TaskSchedule(task).update(after = now)
-            schedule.instances.size shouldBe(1)
+            val schedule = TaskSchedule(task).update(after = after, within = within)
+            schedule.instances.size shouldBe (1)
 
             val instance = schedule.instances.values.first()
-            instance.postponed shouldBe(null)
+            instance.postponed shouldBe (null)
 
             val postponedDuration = Duration.ofMinutes(2)
 
             val updatedSchedule = schedule.postpone(instance = instance.id, by = postponedDuration)
-            updatedSchedule.instances.size shouldBe(1)
+            updatedSchedule.instances.size shouldBe (1)
 
             val updatedInstance = updatedSchedule.instances.values.first()
-            updatedInstance.postponed shouldBe(postponedDuration)
+            updatedInstance.postponed shouldBe (postponedDuration)
 
             val finalSchedule = updatedSchedule.postpone(instance = instance.id, by = postponedDuration)
-            finalSchedule.instances.size shouldBe(1)
+            finalSchedule.instances.size shouldBe (1)
 
             val finalInstance = finalSchedule.instances.values.first()
-            finalInstance.postponed shouldBe(postponedDuration.multipliedBy(2))
+            finalInstance.postponed shouldBe (postponedDuration.multipliedBy(2))
         }
 
         "fail to postpone missing task instances" {
@@ -166,103 +211,122 @@ class TaskScheduleSpec : WordSpec({
         }
 
         "support schedule matching" {
-            val now = Instant.now()
+            val after = after()
+            val within = Duration.ofMinutes(5)
             val tolerance = Duration.ofSeconds(2)
 
             val schedule = TaskSchedule(task)
 
             schedule.match(
-                instant = now,
+                instant = after,
                 withTolerance = tolerance
-            ) shouldBe(TaskSchedule.Matched.None)
+            ) shouldBe (emptyList())
 
-            val updatedSchedule = schedule.update(after = now)
-            updatedSchedule.instances.size shouldBe(1)
+            val updatedSchedule = schedule.update(after = after, within = within)
+            updatedSchedule.instances.size shouldBe (1)
 
             val instance = updatedSchedule.instances.values.first()
-            val diff = Duration.between(now, instance.execution())
+            val diff = Duration.between(after, instance.execution())
 
             updatedSchedule.match(
-                instant = now.minus(diff).minusSeconds(1),
+                instant = after.minus(diff).minusSeconds(1),
                 withTolerance = tolerance
-            ) shouldBe(TaskSchedule.Matched.None)
+            ) shouldBe (listOf(TaskSchedule.Matched.None))
 
             updatedSchedule.match(
-                instant = now.plus(diff).minus(task.contextSwitch).plusSeconds(1),
+                instant = after.plus(diff).minus(task.contextSwitch).plusSeconds(1),
                 withTolerance = tolerance
-            ) shouldBe(TaskSchedule.Matched.ContextSwitch(instance))
+            ) shouldBe (listOf(TaskSchedule.Matched.ContextSwitch(instance)))
 
             updatedSchedule.match(
-                instant = now.plus(diff),
+                instant = after.plus(diff),
                 withTolerance = tolerance
-            ) shouldBe(TaskSchedule.Matched.Instant(instance))
+            ) shouldBe (listOf(TaskSchedule.Matched.Instant(instance)))
         }
 
-        "support sending notifications via a provided notifier" {
-            val notifier = MockNotifier()
-
+        "support adjusting scheduling when a task's schedule is updated" {
             val now = Instant.now()
-            val tolerance = Duration.ofSeconds(2)
+            val within = Duration.ofMinutes(5)
 
             val schedule = TaskSchedule(task)
+            schedule.task shouldBe (task)
+            schedule.instances shouldBe (emptyMap())
 
-            schedule.notify(
-                instant = now,
-                withTolerance = tolerance,
-                notifier = notifier
+            val updatedSchedule = schedule
+                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
+                .update(after = now.minus(Duration.ofMinutes(45)), within = within)
+                .update(after = now, within = within)
+            updatedSchedule.task shouldBe (task)
+            updatedSchedule.instances.size shouldBe (3)
+
+            val updatedTask = task.copy(
+                schedule = Task.Schedule.Repeating(
+                    start = LocalTime.of(0, 5).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
+                    every = Duration.ofMinutes(21)
+                )
             )
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(0)
 
-            val updatedSchedule = schedule.update(after = now)
-            updatedSchedule.instances.size shouldBe(1)
+            val scheduleWithUpdatedTask = updatedSchedule.withTask(updatedTask)
+            scheduleWithUpdatedTask.task shouldBe (updatedTask)
+            scheduleWithUpdatedTask.instances.size shouldBe (2)
 
-            val instance = updatedSchedule.instances.values.first()
-            val diff = Duration.between(now, instance.execution())
+            scheduleWithUpdatedTask.instances.values.forEach { instance ->
+                instance.execution().isBefore(now) shouldBe (true)
+            }
+        }
 
-            updatedSchedule.notify(
-                instant = now.minus(diff),
-                withTolerance = tolerance,
-                notifier = notifier
+        "support adjusting scheduling when a task's state is updated" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+
+            val schedule = TaskSchedule(task)
+            schedule.task shouldBe (task)
+            schedule.instances shouldBe (emptyMap())
+
+            val updatedSchedule = schedule
+                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
+                .update(after = now.minus(Duration.ofMinutes(45)), within = within)
+                .update(after = now, within = within)
+            updatedSchedule.task shouldBe (task)
+            updatedSchedule.instances.size shouldBe (3)
+
+            val updatedTask = task.copy(isActive = false)
+
+            val scheduleWithUpdatedTask = updatedSchedule.withTask(updatedTask)
+            scheduleWithUpdatedTask.task shouldBe (updatedTask)
+            scheduleWithUpdatedTask.instances.size shouldBe (2)
+
+            scheduleWithUpdatedTask.instances.values.forEach { instance ->
+                instance.execution().isBefore(now) shouldBe (true)
+            }
+        }
+
+        "not adjust scheduling when a task's details are updated" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+
+            val schedule = TaskSchedule(task)
+            schedule.task shouldBe (task)
+            schedule.instances shouldBe (emptyMap())
+
+            val updatedSchedule = schedule
+                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
+                .update(after = now.minus(Duration.ofMinutes(45)), within = within)
+                .update(after = now, within = within)
+            updatedSchedule.task shouldBe (task)
+            updatedSchedule.instances.size shouldBe (3)
+
+            val updatedTask = task.copy(
+                id = 1,
+                name = "other-name",
+                description = "other-description",
+                goal = "other-goal",
+                contextSwitch = Duration.ofMinutes(42)
             )
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(0)
 
-            updatedSchedule.notify(
-                instant = now.plus(diff).minus(task.contextSwitch).plusSeconds(1),
-                withTolerance = tolerance,
-                notifier = notifier
-            )
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(0)
-
-            updatedSchedule.notify(
-                instant = now.plus(diff),
-                withTolerance = tolerance,
-                notifier = notifier
-            )
-            notifier.statistics()[MockNotifier.Statistic.PutInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInternalAlarm] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceExecutionNotification] shouldBe(1)
-            notifier.statistics()[MockNotifier.Statistic.PutInstanceContextSwitchNotification] shouldBe(1)
-            notifier.statistics()[MockNotifier.Statistic.DeleteInstanceNotifications] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.PutSummaryNotification] shouldBe(0)
-            notifier.statistics()[MockNotifier.Statistic.DeleteSummaryNotification] shouldBe(0)
+            val scheduleWithUpdatedTask = updatedSchedule.withTask(updatedTask)
+            scheduleWithUpdatedTask.task shouldBe (updatedTask)
+            scheduleWithUpdatedTask.instances.size shouldBe (3)
         }
     }
 })

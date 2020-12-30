@@ -3,8 +3,10 @@ buildscript {
         jcenter()
         google()
     }
+
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.72")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.10")
+        classpath("com.android.tools.build:gradle:4.1.1")
     }
 }
 
@@ -22,5 +24,17 @@ allprojects {
 }
 
 subprojects {
-    version = "1.0.0"
+    version = "1.0.0-SNAPSHOT"
+}
+
+allprojects {
+    tasks.withType<Test> {
+        testLogging {
+            showCauses = true
+            showExceptions = true
+            showStackTraces = true
+            showStandardStreams = true
+            events("passed", "skipped", "failed", "standardOut", "standardError")
+        }
+    }
 }

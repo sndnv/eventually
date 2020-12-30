@@ -1,6 +1,5 @@
 package eventually.core.model
 
-import eventually.core.notifications.Notifier
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -10,29 +9,52 @@ data class TaskSchedule(
     val instances: Map<UUID, TaskInstance>,
     val dismissed: List<Instant>
 ) {
-    fun update(after: Instant): TaskSchedule {
-        val next = task.schedule.next(after)
+    fun update(after: Instant, within: Duration): TaskSchedule {
+        fun requireNextInstants(after: Instant): List<Instant> {
+            val nextInstants = task.schedule.next(after, within)
+            require(nextInstants.isNotEmpty()) {
+                "At least one next instant expected for task [${task.id} / ${task.name}]"
+            }
+            return nextInstants
+        }
 
-        val updatedDismissed = dismissed.filter { it.isAfter(next) }
+        var nextInstants = requireNextInstants(after)
 
-        return if (!dismissed.contains(next) && instances.values.none { it.instant == next }) {
-            val instance = TaskInstance(instant = next)
+        return if (task.isActive) {
+            val collected: List<Instant>
+            while (true) {
+                val last = nextInstants.last()
+
+                val filtered = nextInstants.filter { next ->
+                    !dismissed.contains(next) && instances.values.none { it.instant == next }
+                }
+
+                if (task.schedule is Task.Schedule.Repeating && instances.isEmpty() && filtered.isEmpty()) {
+                    nextInstants = requireNextInstants(after = last).take(1)
+                } else {
+                    collected = filtered
+                    break
+                }
+            }
+
+            val nextInstances = collected
+                .map { TaskInstance(instant = it) }
+                .map { it.id to it }
+                .toMap()
+
             copy(
-                instances = instances + (instance.id to instance),
-                dismissed = updatedDismissed
+                instances = instances + nextInstances
             )
         } else {
-            copy(
-                dismissed = updatedDismissed
-            )
+            this
         }
     }
 
-    fun next(after: Instant): Pair<TaskInstance, Instant>? {
+    fun next(after: Instant): List<Pair<TaskInstance, Instant>> {
         return instances.values
-            .map { Pair(it, it.execution()) }
+            .map { it to it.execution() }
+            .filter { it.second.isAfter(after) }
             .sortedBy { it.second }
-            .find { it.second.isAfter(after) }
     }
 
     fun dismiss(instance: UUID): TaskSchedule {
@@ -56,42 +78,39 @@ data class TaskSchedule(
         return copy(instances = instances + (instance to instances[instance]?.postponed(by)!!))
     }
 
-    fun notify(instant: Instant, withTolerance: Duration, notifier: Notifier) {
-        when (val match = match(instant = instant, withTolerance = withTolerance)) {
-            is Matched.Instant -> notifier.putInstanceExecutionNotification(
-                task = task,
-                instance = match.instance
-            )
+    fun match(instant: Instant, withTolerance: Duration): List<Matched> =
+        next(after = instant.minus(withTolerance)).map { next ->
+            val nextExecution = next.second
 
-            is Matched.ContextSwitch -> notifier.putInstanceContextSwitchNotification(
-                task = task,
-                instance = match.instance
-            )
+            val instantMin = instant.minus(withTolerance)
+            val instantMax = instant.plus(withTolerance)
+            val matchesInstant = instantMin.isBefore(nextExecution) && instantMax.isAfter(nextExecution)
 
-            is Matched.None -> Unit // do nothing
-        }
-    }
-
-    fun match(instant: Instant, withTolerance: Duration): Matched {
-        return when (val next = next(after = instant.minus(withTolerance))) {
-            null -> Matched.None
-            else -> {
-                val nextExecution = next.second
-
-                val instantMin = instant.minus(withTolerance)
-                val instantMax = instant.plus(withTolerance)
-                val matchesInstant = instantMin.isBefore(nextExecution) && instantMax.isAfter(nextExecution)
-
-                val matchesContextSwitch by lazy {
-                    instant.isBefore(nextExecution) && instant.plus(task.contextSwitch).isAfter(nextExecution)
-                }
-
-                when {
-                    matchesInstant -> Matched.Instant(instance = next.first)
-                    matchesContextSwitch -> Matched.ContextSwitch(instance = next.first)
-                    else -> Matched.None
-                }
+            val matchesContextSwitch by lazy {
+                instant.isBefore(nextExecution) && instant.plus(task.contextSwitch).isAfter(nextExecution)
             }
+
+            when {
+                matchesInstant -> Matched.Instant(instance = next.first)
+                matchesContextSwitch -> Matched.ContextSwitch(instance = next.first)
+                else -> Matched.None
+            }
+        }
+
+    fun withTask(newTask: Task): TaskSchedule {
+        val now = Instant.now()
+
+        val scheduleChanged = task.schedule != newTask.schedule
+        val stateChanged = task.isActive != newTask.isActive
+
+        return if (scheduleChanged || stateChanged) {
+            val pastInstances = instances.filterValues { instance -> instance.execution().isBefore(now) }
+            copy(
+                task = newTask,
+                instances = pastInstances
+            )
+        } else {
+            copy(task = newTask)
         }
     }
 
