@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+
+        <variable
+            name="task"
+            type="eventually.core.model.Task" />
+
+        <variable
+            name="operation"
+            type="String" />
+
+        <variable
+            name="active"
+            type="Boolean" />
+    </data>
+
+    <merge>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/task_details_field_title_name"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/name"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="text"
+                    app:hintEnabled="false"
+                    app:placeholderText="@string/task_details_field_title_name_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/name_text_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@{task.name}" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/task_details_field_title_goal"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/goal"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="text"
+                    app:hintEnabled="false"
+                    app:placeholderText="@string/task_details_field_title_goal_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/goal_text_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@{task.goal}" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/task_details_field_title_description"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/description"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="textMultiLine"
+                    app:hintEnabled="false"
+                    app:placeholderText="@string/task_details_field_title_description_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/description_text_input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@{task.description}" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/task_details_field_title_context_switch"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+
+                <include
+                    android:id="@+id/context_switch"
+                    layout="@layout/input_duration"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/task_details_field_title_schedule"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/schedule_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/task_details_field_title_schedule"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <Button
+                            android:id="@+id/schedule_type_once"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/task_details_field_title_schedule_once" />
+
+                        <Button
+                            android:id="@+id/schedule_type_repeating"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/task_details_field_title_schedule_repeating" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/is_active"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:checked="@{active}"
+                        android:gravity="center_vertical|end"
+                        android:text="@string/task_details_field_title_is_active" />
+                </LinearLayout>
+
+                <include
+                    android:id="@+id/schedule_once"
+                    layout="@layout/input_schedule_once"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+
+                <include
+                    android:id="@+id/schedule_repeating"
+                    layout="@layout/input_schedule_repeating"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <include layout="@layout/layout_divider" />
+
+            <Button
+                android:id="@+id/execute_operation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:text="@{operation}" />
+        </LinearLayout>
+    </merge>
+</layout>

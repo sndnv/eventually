@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Summary">
+
+        <DropDownPreference
+            app:entries="@array/settings_summary_size_entries"
+            app:entryValues="@array/settings_summary_size_values"
+            app:key="summary_size"
+            app:title="@string/settings_summary_size_title" />
+
+        <DropDownPreference
+            app:entries="@array/settings_summary_max_tasks_entries"
+            app:entryValues="@array/settings_summary_max_tasks_values"
+            app:key="summary_max_tasks"
+            app:title="@string/settings_summary_max_tasks_title" />
+    </PreferenceCategory>
+
+
+    <PreferenceCategory app:title="Other">
+
+        <EditTextPreference
+            app:key="postpone_length"
+            app:title="@string/settings_postpone_length_title" />
+
+        <DropDownPreference
+            app:entries="@array/settings_date_time_format_entries"
+            app:entryValues="@array/settings_date_time_format_values"
+            app:key="date_time_format"
+            app:title="@string/settings_date_time_format_title" />
+    </PreferenceCategory>
+
+
+    <PreferenceCategory app:title="Debug">
+        <SwitchPreference
+            app:key="stats_enabled"
+            app:title="@string/settings_stats_enabled_title" />
+
+        <SwitchPreference
+            app:key="show_all_instances"
+            app:title="@string/settings_show_all_instances_title" />
+    </PreferenceCategory>
+</PreferenceScreen>

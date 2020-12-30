@@ -1,0 +1,181 @@
+<resources>
+    <string name="app_name">Eventually</string>
+    <string name="main_top_app_bar_subtitle_summary">Summary</string>
+    <string name="main_top_app_bar_subtitle_list">Tasks</string>
+    <string name="main_top_app_bar_subtitle_calendar">Calendar</string>
+    <string name="search_hint">Search Tasks</string>
+    <string name="create_task_hint">Create Task</string>
+    <string name="settings_hint">Settings</string>
+    <string name="stats_hint">Statistics</string>
+    <string name="edit_task_hint">Edit Task</string>
+
+    <!-- Notification Channels -->
+    <string name="notification_channel_instance_execution_name">Task Notifications</string>
+    <string name="notification_channel_instance_context_switch_name">Task Context Switch Notifications</string>
+
+    <!-- Notifications -->
+    <string name="notification_instance_execution_title">[%s] - %s</string>
+    <string name="notification_instance_execution_text">[%s] - %s</string>
+    <string name="notification_instance_context_switch_title">[%s] - %s</string>
+    <string name="notification_instance_context_switch_text">[%s] - %s</string>
+    <string name="notification_instance_action_dismiss_title">Dismiss</string>
+    <string name="notification_instance_action_postpone_title">Postpone</string>
+
+    <!-- Toasts -->
+    <string name="toast_task_created">Task created</string>
+    <string name="toast_task_updated">Task updated</string>
+    <string name="toast_task_deleted">Task deleted</string>
+    <string name="toast_task_dismissed">Task dismissed</string>
+    <string name="toast_task_postponed">Task postponed</string>
+
+    <!-- Summary -->
+    <string name="summary_item_content">%1$s - %2$s (%3$s)</string>
+    <string name="summary_item_instant">%s at %s</string>
+    <string name="summary_item_instant_today">%s</string>
+
+    <!-- Summary / Expired -->
+    <string name="summary_expired_overview_title">Overdue</string>
+    <string name="summary_expired_dialog_title">Overdue</string>
+    <string name="summary_expired_dialog_item_text">%1$s - %2$s (%3$s)</string>
+    <string name="summary_expired_footer_empty">None</string>
+    <plurals name="summary_expired_footer_non_empty">
+        <item quantity="one">One task expired since %2$s</item>
+        <item quantity="other">%1$s tasks expired since %2$s</item>
+    </plurals>
+
+    <!-- Summary / Upcoming -->
+    <string name="summary_upcoming_overview_title">Upcoming</string>
+    <string name="summary_upcoming_dialog_title">Upcoming</string>
+    <string name="summary_upcoming_dialog_item_text">%1$s - %2$s (%3$s)</string>
+    <string name="summary_upcoming_footer_empty">None</string>
+    <plurals name="summary_upcoming_footer_non_empty_tasks">
+        <item quantity="one">One task expected</item>
+        <item quantity="other">%1$s tasks expected</item>
+    </plurals>
+    <plurals name="summary_upcoming_footer_non_empty_period">
+        <item quantity="one">in the next %2$s.</item>
+        <item quantity="other">in the next %1$s %2$s.</item>
+    </plurals>
+
+    <!-- Calendar -->
+    <string name="calendar_dialog_title">%s</string>
+    <string name="calendar_dialog_item_text">%1$s - %2$s (%3$s)</string>
+
+    <!--  Task List -->
+    <string name="task_list_empty_text">No Tasks</string>
+
+    <!-- Task Details -->
+    <string name="task_details_field_title_name">Name</string>
+    <string name="task_details_field_title_name_hint">Task Name</string>
+    <string name="task_details_field_title_description">Description</string>
+    <string name="task_details_field_title_description_hint">Task Description</string>
+    <string name="task_details_field_title_goal">Goal</string>
+    <string name="task_details_field_title_goal_hint">Task Goal</string>
+    <string name="task_details_field_title_context_switch">Context Switch</string>
+    <string name="task_details_field_title_is_active">Enabled</string>
+    <string name="task_details_field_title_schedule">Schedule</string>
+    <string name="task_details_field_title_schedule_once">Once</string>
+    <string name="task_details_field_title_schedule_once_time">At</string>
+    <string name="task_details_field_title_schedule_once_date">On</string>
+    <string name="task_details_field_title_schedule_repeating">Repeating</string>
+    <string name="task_details_field_title_schedule_repeating_start">Starting At</string>
+    <string name="task_details_field_title_schedule_repeating_every">Every</string>
+    <string name="task_details_field_error_name">Name cannot be empty</string>
+    <string name="task_details_field_error_description">Description cannot be empty</string>
+    <string name="task_details_field_error_goal">Goal cannot be empty</string>
+    <string name="task_details_field_error_context_switch_duration">Duration cannot be empty or 0</string>
+    <string name="task_details_field_error_context_switch_duration_padding"> </string>
+    <string name="task_details_field_error_schedule_repeating_duration">Duration cannot be empty or 0</string>
+    <string name="task_details_field_error_schedule_repeating_duration_padding">\n</string>
+
+    <!-- Task Preview -->
+    <string name="task_preview_button_text_dismiss">Dismiss</string>
+    <string name="task_preview_button_text_postpone">Postpone</string>
+    <string name="task_preview_button_description_delete">Delete Task</string>
+    <string name="task_preview_field_title_name">Name</string>
+    <string name="task_preview_field_title_description">Description</string>
+    <string name="task_preview_field_title_goal">Goal</string>
+    <string name="task_preview_field_title_context_switch">Context Switch</string>
+    <string name="task_preview_field_title_schedule">Schedule</string>
+    <string name="task_preview_field_title_instances">Instances</string>
+
+    <string name="task_preview_field_content_inactive">(disabled)</string>
+    <string name="task_preview_field_content_context_switch">%d %s</string>
+    <string name="task_preview_field_content_schedule_once">On %1$s at %2$s</string>
+    <string name="task_preview_field_content_schedule_repeating">Every %1$s %2$s starting from %3$s</string>
+
+    <string name="task_preview_field_content_instance_execution">%s</string>
+    <string name="task_preview_field_content_instance_execution_postponed">%s (postponed)</string>
+
+    <string name="task_preview_instances_empty_text">None</string>
+    <string name="task_preview_instances_too_many_text">Showing %1$s out of %2$s instances</string>
+    <string name="task_preview_instances_too_many_tooltip">Dismiss some instances to show more</string>
+
+    <!-- New Task -->
+    <string name="new_task_subtitle">Create Task</string>
+    <string name="new_task_action">Create</string>
+
+    <!-- Existing Task -->
+    <string name="existing_task_update_action">Update</string>
+    <string name="existing_task_delete_message">Delete task %1$s?</string>
+
+    <!-- Settings -->
+    <string name="settings_subtitle">Settings</string>
+    <string name="settings_summary_size_title">Size</string>
+    <plurals name="settings_summary_size_hint">
+        <item quantity="one">Show expected tasks in the next %2$s</item>
+        <item quantity="other">Show expected tasks in the next %1$s %2$s</item>
+    </plurals>
+    <string name="settings_summary_max_tasks_title">Tasks</string>
+    <string name="settings_summary_max_tasks_hint">Show at most %1$s tasks</string>
+    <string name="settings_postpone_length_title">Postpone length</string>
+    <plurals name="settings_postpone_length_hint">
+        <item quantity="one">Postpone a task by %1$s minute</item>
+        <item quantity="other">Postpone a task by %1$s minutes</item>
+    </plurals>
+    <string name="settings_date_time_format_title">Date/Time Format</string>
+    <string name="settings_date_time_format_hint">Show dates as %1$s and time as %2$s</string>
+    <string name="settings_stats_enabled_title">Show Statistics Menu Option</string>
+    <string name="settings_show_all_instances_title">Show All Task Instances</string>
+
+    <!-- Stats -->
+    <string name="stats_subtitle">Statistics</string>
+    <string name="stats_title_tasks">Tasks</string>
+    <string name="stats_title_schedules">Task Schedules</string>
+    <string name="stats_title_notifications">Notifications</string>
+    <string name="stats_title_last_evaluation">Last Evaluation</string>
+    <string name="stats_title_next_evaluation">Next Evaluation</string>
+    <string name="stats_title_evaluations">Evaluations</string>
+    <string name="stats_content_tasks">Total: %1$s (enabled: %2$s, disabled: %3$s)</string>
+    <string name="stats_content_schedules">Total: %1$s (with %2$s instance(s))</string>
+    <string name="stats_content_notifications">Total: %1$s (context: %2$s, execution: %3$s)</string>
+    <string name="stats_content_last_evaluation">%1$s</string>
+    <string name="stats_content_next_evaluation">%1$s</string>
+    <string name="stats_content_evaluations">Total: %1$s</string>
+    <string name="stats_force_evaluation">Force Evaluation</string>
+
+    <!-- Date/Time -->
+    <string name="date_time_format_yesterday">Yesterday</string>
+    <string name="date_time_format_today">Today</string>
+    <string name="date_time_format_tomorrow">Tomorrow</string>
+    <plurals name="duration_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="duration_hours">
+        <item quantity="one">hour</item>
+        <item quantity="other">hours</item>
+    </plurals>
+    <plurals name="duration_minutes">
+        <item quantity="one">minute</item>
+        <item quantity="other">minutes</item>
+    </plurals>
+    <plurals name="duration_seconds">
+        <item quantity="one">second</item>
+        <item quantity="other">seconds</item>
+    </plurals>
+    <string name="duration_plural_days">days</string>
+    <string name="duration_plural_hours">hours</string>
+    <string name="duration_plural_minutes">minutes</string>
+    <string name="duration_plural_seconds">seconds</string>
+</resources>

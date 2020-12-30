@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="settings_summary_size_entries">
+        <item>Show a 15-minute summary</item>
+        <item>Show a 30-minute summary</item>
+        <item>Show a 1-hour summary</item>
+        <item>Show a 2-hour summary</item>
+        <item>Show a 4-hour summary</item>
+        <item>Show a 6-hour summary</item>
+        <item>Show a 12-hour summary</item>
+        <item>Show a 1-day summary</item>
+    </string-array>
+    <string-array name="settings_summary_size_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>240</item>
+        <item>360</item>
+        <item>720</item>
+        <item>1440</item>
+    </string-array>
+    <string-array name="settings_summary_max_tasks_entries">
+        <item>Show 3 tasks in summary</item>
+        <item>Show 5 tasks in summary</item>
+        <item>Show 7 tasks in summary</item>
+        <item>Show 9 tasks in summary</item>
+        <item>Show 11 tasks in summary</item>
+    </string-array>
+    <string-array name="settings_summary_max_tasks_values">
+        <item>3</item>
+        <item>5</item>
+        <item>7</item>
+        <item>9</item>
+        <item>11</item>
+    </string-array>
+    <string-array name="settings_date_time_format_entries">
+        <item>System Default</item>
+        <item>ISO Date/Time</item>
+    </string-array>
+    <string-array name="settings_date_time_format_values">
+        <item>system</item>
+        <item>iso</item>
+    </string-array>
+</resources>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/task_search"
+        android:contentDescription="@string/search_hint"
+        android:icon="@drawable/ic_search"
+        android:title="@string/search_hint"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        app:showAsAction="ifRoom|collapseActionView" />
+
+    <item
+        android:id="@+id/task_add"
+        android:contentDescription="@string/create_task_hint"
+        android:icon="@drawable/ic_list_add"
+        android:title="@string/create_task_hint"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/settings"
+        android:contentDescription="@string/settings_hint"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/settings_hint"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/stats"
+        android:contentDescription="@string/settings_hint"
+        android:icon="@drawable/ic_stats"
+        android:title="@string/stats_hint"
+        app:showAsAction="never" />
+
+</menu>

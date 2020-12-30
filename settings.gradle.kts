@@ -1,3 +1,3 @@
 rootProject.name = "eventually"
 
-include("core")
+include(":core", ":client-android")
