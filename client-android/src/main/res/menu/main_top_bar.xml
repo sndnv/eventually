@@ -26,9 +26,16 @@
 
     <item
         android:id="@+id/stats"
-        android:contentDescription="@string/settings_hint"
+        android:contentDescription="@string/stats_hint"
         android:icon="@drawable/ic_stats"
         android:title="@string/stats_hint"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/about"
+        android:contentDescription="@string/about_hint"
+        android:icon="@drawable/ic_about"
+        android:title="@string/about_hint"
         app:showAsAction="never" />
 
 </menu>
