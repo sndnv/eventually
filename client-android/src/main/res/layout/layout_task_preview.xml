@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+
+        <variable
+            name="task"
+            type="eventually.core.model.Task" />
+    </data>
+
+    <merge>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_preview_field_title_name"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <TextView
+                        android:id="@+id/preview_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@{task.name}"
+                        android:textAppearance="?attr/textAppearanceHeadline6" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_preview_field_title_goal"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <TextView
+                        android:id="@+id/preview_goal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@{task.goal}"
+                        android:textAppearance="?attr/textAppearanceBody2" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_preview_field_title_description"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <TextView
+                        android:id="@+id/preview_description"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@{task.description}"
+                        android:textAppearance="?attr/textAppearanceBody2" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_preview_field_title_context_switch"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <TextView
+                        android:id="@+id/preview_context_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceBody2" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_preview_field_title_schedule"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <TextView
+                        android:id="@+id/preview_schedule"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceBody2" />
+                </LinearLayout>
+
+                <include layout="@layout/layout_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_preview_field_title_instances"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <TextView
+                        android:id="@+id/preview_instances_too_many"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:textAlignment="center"
+                        android:textAppearance="?attr/textAppearanceBody2"
+                        android:textStyle="italic"
+                        android:tooltipText="@string/task_preview_instances_too_many_tooltip"
+                        android:visibility="gone" />
+
+                    <eventually.client.activities.views.ExpandingListView
+                        android:id="@+id/preview_instances"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/preview_instances_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="@string/task_preview_instances_empty_text"
+                        android:textAppearance="?attr/textAppearanceBody2" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </merge>
+</layout>
