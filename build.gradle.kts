@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+
 buildscript {
     repositories {
         jcenter()
@@ -30,6 +32,7 @@ subprojects {
 allprojects {
     tasks.withType<Test> {
         testLogging {
+            exceptionFormat = TestExceptionFormat.FULL
             showCauses = true
             showExceptions = true
             showStackTraces = true
