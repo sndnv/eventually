@@ -80,6 +80,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                     startActivity(Intent(this@MainActivity, StatsActivity::class.java))
                     true
                 }
+                R.id.about -> {
+                    startActivity(Intent(this@MainActivity, AboutActivity::class.java))
+                    true
+                }
                 else -> false
             }
         }

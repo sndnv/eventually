@@ -12,7 +12,7 @@ We use [SemVer](http://semver.org/) for versioning.
 ## License
 This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details
 
-> Copyright 2018 https://github.com/sndnv
+> Copyright 2020 https://github.com/sndnv
 >
 > Licensed under the Apache License, Version 2.0 (the "License");
 > you may not use this file except in compliance with the License.
