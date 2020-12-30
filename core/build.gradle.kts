@@ -8,10 +8,10 @@ plugins {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.9")
-    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.2.0")
-    testImplementation("io.kotest:kotest-assertions-core-jvm:4.2.0")
-    testImplementation("io.kotest:kotest-property-jvm:4.2.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:4.3.1")
+    testImplementation("io.kotest:kotest-assertions-core-jvm:4.3.1")
+    testImplementation("io.kotest:kotest-property-jvm:4.3.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.9")
 }
 
