@@ -69,7 +69,10 @@
     <string name="summary_upcoming_overview_title">Upcoming</string>
     <string name="summary_upcoming_dialog_title">Upcoming</string>
     <string name="summary_upcoming_dialog_item_text">%1$s - %2$s (%3$s)</string>
-    <string name="summary_upcoming_footer_empty">None</string>
+    <plurals name="summary_upcoming_footer_empty_period">
+        <item quantity="one">No tasks expected in the next %2$s.</item>
+        <item quantity="other">No tasks expected in the next %1$s %2$s.</item>
+    </plurals>
     <plurals name="summary_upcoming_footer_non_empty_tasks">
         <item quantity="one">One task expected</item>
         <item quantity="other">%1$s tasks expected</item>

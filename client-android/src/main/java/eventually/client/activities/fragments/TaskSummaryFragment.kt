@@ -132,12 +132,26 @@ class TaskSummaryFragment : Fragment() {
             }
         }
 
-        fun renderUpcomingFooter(upcoming: List<Pair<Task, TaskInstance>>): SpannableStringBuilder =
-            if (upcoming.isEmpty()) {
-                SpannableStringBuilder(getString(R.string.summary_upcoming_footer_empty))
-            } else {
-                val (amount, unit) = summarySize.toFields()
+        fun renderUpcomingFooter(upcoming: List<Pair<Task, TaskInstance>>): SpannableStringBuilder {
+            val (amount, unit) = summarySize.toFields()
 
+            return if (upcoming.isEmpty()) {
+                SpannableStringBuilder(
+                    resources.getQuantityString(R.plurals.summary_upcoming_footer_empty_period, amount)
+                        .renderAsSpannable(
+                            StyledString(
+                                placeholder = "%1\$s",
+                                content = amount.toString(),
+                                style = StyleSpan(Typeface.BOLD)
+                            ),
+                            StyledString(
+                                placeholder = "%2\$s",
+                                content = unit.asQuantityString(amount, context),
+                                style = StyleSpan(Typeface.BOLD)
+                            )
+                        )
+                )
+            } else {
                 val tasks = resources.getQuantityString(R.plurals.summary_upcoming_footer_non_empty_tasks, upcoming.size)
                     .renderAsSpannable(
                         StyledString(
@@ -168,6 +182,7 @@ class TaskSummaryFragment : Fragment() {
 
                 builder
             }
+        }
 
 
         fun renderContent(tasks: List<Pair<Task, TaskInstance>>): SpannableStringBuilder {
