@@ -57,8 +57,14 @@ class TaskListItemAdapter : RecyclerView.Adapter<TaskListItemAdapter.ItemViewHol
         val task = tasks[position]
 
         holder.name.text = task.name
-        holder.description.text = task.description
         holder.goal.text = task.goal
+
+        if (task.description.isEmpty()) {
+            holder.description.visibility = View.GONE
+        } else {
+            holder.description.visibility = View.VISIBLE
+            holder.description.text = task.description
+        }
 
         holder.bind(task)
     }

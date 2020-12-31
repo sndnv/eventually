@@ -52,7 +52,11 @@ object NotificationManagerExtensions {
         val executionTime = instance.execution().formatAsTime(context)
 
         val title = context.getString(R.string.notification_instance_execution_title, executionTime, task.name)
-        val text = context.getString(R.string.notification_instance_execution_text, task.goal, task.description)
+        val text = if (task.description.isEmpty()) {
+            context.getString(R.string.notification_instance_execution_no_description_text, task.goal)
+        } else {
+            context.getString(R.string.notification_instance_execution_text, task.goal, task.description)
+        }
 
         val intent = Intents.createTaskDetailsIntent(context, task)
         val (dismissAction, postponeAction) = Actions.createInstanceActions(context, task, instance)
@@ -79,7 +83,11 @@ object NotificationManagerExtensions {
         val executionTime = instance.execution().formatAsTime(context)
 
         val title = context.getString(R.string.notification_instance_context_switch_title, executionTime, task.name)
-        val text = context.getString(R.string.notification_instance_context_switch_text, task.goal, task.description)
+        val text = if (task.description.isEmpty()) {
+            context.getString(R.string.notification_instance_context_switch_no_description_text, task.goal)
+        } else {
+            context.getString(R.string.notification_instance_context_switch_text, task.goal, task.description)
+        }
 
         val intent = Intents.createTaskDetailsIntent(context, task)
         val (dismissAction, postponeAction) = Actions.createInstanceActions(context, task, instance)
