@@ -259,10 +259,6 @@ object TaskDetails {
                 context.getString(R.string.task_details_field_error_name)
             }
 
-            val descriptionValid = descriptionField.validateText {
-                context.getString(R.string.task_details_field_error_description)
-            }
-
             val goalValid = goalField.validateText {
                 context.getString(R.string.task_details_field_error_goal)
             }
@@ -290,7 +286,7 @@ object TaskDetails {
                 true
             }
 
-            return nameValid && descriptionValid && goalValid && contextSwitchDurationAmountValid && scheduleValid
+            return nameValid && goalValid && contextSwitchDurationAmountValid && scheduleValid
         }
 
         fun toNewTask(): Task = Task(

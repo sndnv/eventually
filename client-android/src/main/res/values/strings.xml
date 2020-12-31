@@ -40,8 +40,10 @@
     <string name="notification_foreground_service_title">Background Scheduler Running</string>
     <string name="notification_instance_execution_title">[%s] - %s</string>
     <string name="notification_instance_execution_text">[%s] - %s</string>
+    <string name="notification_instance_execution_no_description_text">[%s]</string>
     <string name="notification_instance_context_switch_title">[%s] - %s</string>
     <string name="notification_instance_context_switch_text">[%s] - %s</string>
+    <string name="notification_instance_context_switch_no_description_text">[%s]</string>
     <string name="notification_instance_action_dismiss_title">Dismiss</string>
     <string name="notification_instance_action_postpone_title">Postpone</string>
 
@@ -93,11 +95,11 @@
 
     <!-- Task Details -->
     <string name="task_details_field_title_name">Name</string>
-    <string name="task_details_field_title_name_hint">Task Name</string>
+    <string name="task_details_field_title_name_hint">Task name</string>
     <string name="task_details_field_title_description">Description</string>
-    <string name="task_details_field_title_description_hint">Task Description</string>
+    <string name="task_details_field_title_description_hint">Extra task information</string>
     <string name="task_details_field_title_goal">Goal</string>
-    <string name="task_details_field_title_goal_hint">Task Goal</string>
+    <string name="task_details_field_title_goal_hint">Goal, category or group for the task</string>
     <string name="task_details_field_title_context_switch">Context Switch</string>
     <string name="task_details_field_title_is_active">Enabled</string>
     <string name="task_details_field_title_schedule">Schedule</string>
@@ -108,7 +110,6 @@
     <string name="task_details_field_title_schedule_repeating_start">Starting At</string>
     <string name="task_details_field_title_schedule_repeating_every">Every</string>
     <string name="task_details_field_error_name">Name cannot be empty</string>
-    <string name="task_details_field_error_description">Description cannot be empty</string>
     <string name="task_details_field_error_goal">Goal cannot be empty</string>
     <string name="task_details_field_error_context_switch_duration">Duration cannot be empty or 0</string>
     <string name="task_details_field_error_context_switch_duration_padding"> </string>
