@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import eventually.client.scheduling.NotificationManagerExtensions
 import eventually.client.scheduling.NotificationManagerExtensions.createInstanceNotificationChannels
 import eventually.client.scheduling.NotificationManagerExtensions.deleteInstanceNotifications
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceContextSwitchNotification
@@ -46,7 +47,7 @@ class NotificationManagerExtensionsSpec {
 
         manager.createInstanceNotificationChannels(context)
 
-        assertThat(channels.toList().size, equalTo(2))
+        assertThat(channels.toList().size, equalTo(3))
     }
 
     @Test
@@ -100,6 +101,19 @@ class NotificationManagerExtensionsSpec {
         verify(exactly = 1) { manager.cancel(any()) }
 
         confirmVerified(manager)
+    }
+
+    @Test
+    fun createForegroundServiceNotifications() {
+        val context = mockk<Context>(relaxed = true)
+        every { context.getString(any()) } returns "test"
+        every { context.packageName } returns "eventually.client.scheduling"
+
+        val (id, notification) = NotificationManagerExtensions.createForegroundServiceNotification(context)
+
+        assertThat(id, equalTo(-1))
+        assertThat(notification.group, equalTo("eventually.client.scheduling.foreground_service_notification"))
+        assertThat(notification.extras.get(Notification.EXTRA_TITLE) as String, equalTo("test"))
     }
 
     private val task = Task(

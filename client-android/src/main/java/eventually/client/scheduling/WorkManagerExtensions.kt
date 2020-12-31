@@ -29,7 +29,7 @@ object WorkManagerExtensions {
         cancelUniqueWork(EvaluationAlarmWorkName)
     }
 
-    class EvaluationAlarmWorker(val context: Context, workerParams: WorkerParameters): Worker(context, workerParams) {
+    class EvaluationAlarmWorker(val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
         override fun doWork(): Result {
             val intent = Intent(context, SchedulerService::class.java)
             intent.action = SchedulerService.ActionEvaluate

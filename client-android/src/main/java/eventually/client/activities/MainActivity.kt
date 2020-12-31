@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         registerReceiver(dismissReceiver, dismissReceiver.intentFilter)
         registerReceiver(postponeReceiver, postponeReceiver.intentFilter)
 
-        startService(Intent(this, SchedulerService::class.java))
+        startForegroundService(Intent(this, SchedulerService::class.java))
     }
 
     override fun onDestroy() {

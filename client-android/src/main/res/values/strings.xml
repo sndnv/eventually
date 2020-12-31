@@ -32,10 +32,12 @@
     </string>
 
     <!-- Notification Channels -->
+    <string name="notification_channel_foreground_service_name">Scheduler Service</string>
     <string name="notification_channel_instance_execution_name">Task Notifications</string>
     <string name="notification_channel_instance_context_switch_name">Task Context Switch Notifications</string>
 
     <!-- Notifications -->
+    <string name="notification_foreground_service_title">Background Scheduler Running</string>
     <string name="notification_instance_execution_title">[%s] - %s</string>
     <string name="notification_instance_execution_text">[%s] - %s</string>
     <string name="notification_instance_context_switch_title">[%s] - %s</string>

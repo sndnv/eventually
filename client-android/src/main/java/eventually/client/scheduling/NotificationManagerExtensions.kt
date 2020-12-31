@@ -1,5 +1,6 @@
 package eventually.client.scheduling
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -23,6 +24,12 @@ import java.util.UUID
 
 object NotificationManagerExtensions {
     fun NotificationManager.createInstanceNotificationChannels(context: Context, config: Config = Config.Default) {
+        createNotificationChannel(
+            config.foregroundServiceChannel.toNotificationChannel(
+                name = context.getString(R.string.notification_channel_foreground_service_name)
+            )
+        )
+
         createNotificationChannel(
             config.instanceExecutionChannel.toNotificationChannel(
                 name = context.getString(R.string.notification_channel_instance_execution_name)
@@ -92,6 +99,23 @@ object NotificationManagerExtensions {
 
     fun NotificationManager.deleteInstanceNotifications(task: Int, instance: UUID) {
         cancel(getInstanceNotificationId(task, instance))
+    }
+
+    fun createForegroundServiceNotification(context: Context, config: Config = Config.Default): Pair<Int, Notification> {
+        val pendingIntent: PendingIntent = Intent(context, SchedulerService::class.java).let {
+            PendingIntent.getActivity(context, 0, it, 0)
+        }
+
+        val notificationId = -1
+
+        val notification = Notification.Builder(context, config.foregroundServiceChannel.id)
+            .setContentTitle(context.getString(R.string.notification_foreground_service_title))
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentIntent(pendingIntent)
+            .setGroup("eventually.client.scheduling.foreground_service_notification")
+            .build()
+
+        return notificationId to notification
     }
 
     private fun getInstanceNotificationId(task: Task, instance: TaskInstance): Int {
@@ -169,11 +193,13 @@ object NotificationManagerExtensions {
     }
 
     data class Config(
+        val foregroundServiceChannel: Channel,
         val instanceExecutionChannel: Channel,
         val instanceContextSwitchChannel: Channel
     ) {
         companion object {
             val Default: Config = Config(
+                foregroundServiceChannel = Channel.ForegroundServiceChannel,
                 instanceExecutionChannel = Channel.InstanceExecutionChannel,
                 instanceContextSwitchChannel = Channel.InstanceContextSwitchChannel
             )
@@ -196,6 +222,13 @@ object NotificationManagerExtensions {
             }
 
             companion object Defaults {
+                val ForegroundServiceChannel: Channel = Channel(
+                    id = "eventually.client.scheduling.notification_channel_foreground_service",
+                    importance = NotificationManager.IMPORTANCE_LOW,
+                    light = null,
+                    vibrationEnabled = false
+                )
+
                 val InstanceExecutionChannel: Channel = Channel(
                     id = "eventually.client.scheduling.notification_channel_instance_execution",
                     importance = NotificationManager.IMPORTANCE_HIGH,
@@ -206,7 +239,7 @@ object NotificationManagerExtensions {
                 val InstanceContextSwitchChannel: Channel = Channel(
                     id = "eventually.client.scheduling.notification_channel_instance_context_switch",
                     importance = NotificationManager.IMPORTANCE_HIGH,
-                    light = Color.BLUE,
+                    light = Color.CYAN,
                     vibrationEnabled = true
                 )
             }
