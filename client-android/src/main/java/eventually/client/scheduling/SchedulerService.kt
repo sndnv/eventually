@@ -143,6 +143,10 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
     override fun onCreate() {
         super.onCreate()
+
+        val (id, notification) = NotificationManagerExtensions.createForegroundServiceNotification(this)
+        startForeground(id, notification)
+
         HandlerThread("SchedulerService", Process.THREAD_PRIORITY_BACKGROUND).apply {
             start()
             handler = ServiceHandler(looper)
