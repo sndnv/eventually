@@ -57,9 +57,16 @@ object SchedulerOps {
             else -> {
                 val updatedSchedule = schedule.withTask(msg.task)
 
-                val notifications = schedule.instances.keys.filterNot { updatedSchedule.instances.containsKey(it) }
-                    .map { discarded ->
-                        Notification.DeleteInstanceNotifications(msg.task.id, discarded)
+                val notifications =
+                    if (updatedSchedule.task.isActive) {
+                        schedule.instances.keys.filterNot { updatedSchedule.instances.containsKey(it) }
+                            .map { discarded ->
+                                Notification.DeleteInstanceNotifications(msg.task.id, discarded)
+                            }
+                    } else {
+                        schedule.instances.keys.map { discarded ->
+                            Notification.DeleteInstanceNotifications(msg.task.id, discarded)
+                        }
                     }
 
                 updatedSchedule to notifications

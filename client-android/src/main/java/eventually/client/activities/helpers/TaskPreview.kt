@@ -120,6 +120,7 @@ object TaskPreview {
         instancesView.adapter = TaskInstanceListItemAdapter(
             context = this,
             resource = R.layout.list_item_task_instance,
+            taskActive = schedule?.task?.isActive ?: false,
             instances = if (showAllInstances) instances else instances.take(MaxShownInstances),
             handlers = handlers
         )
@@ -154,6 +155,7 @@ object TaskPreview {
     class TaskInstanceListItemAdapter(
         context: Context,
         private val resource: Int,
+        private val taskActive: Boolean,
         private val instances: List<TaskInstance>,
         private val handlers: Handlers?
     ) :
@@ -183,6 +185,8 @@ object TaskPreview {
             layout.button_postpone.setOnClickListener(handlers?.let {
                 it.postpone(instance.id)
             })
+
+            layout.button_postpone.isEnabled = taskActive
 
             return layout
         }
