@@ -58,7 +58,7 @@ object NotificationManagerExtensions {
             context.getString(R.string.notification_instance_execution_text, task.goal, task.description)
         }
 
-        val intent = Intents.createTaskDetailsIntent(context, task)
+        val intent = Intents.createTaskDetailsIntent(context, task, instance)
         val (dismissAction, postponeAction) = Actions.createInstanceActions(context, task, instance)
 
         val notification = NotificationCompat.Builder(context, config.instanceExecutionChannel.id)
@@ -89,7 +89,7 @@ object NotificationManagerExtensions {
             context.getString(R.string.notification_instance_context_switch_text, task.goal, task.description)
         }
 
-        val intent = Intents.createTaskDetailsIntent(context, task)
+        val intent = Intents.createTaskDetailsIntent(context, task, instance)
         val (dismissAction, postponeAction) = Actions.createInstanceActions(context, task, instance)
 
         val notification = NotificationCompat.Builder(context, config.instanceContextSwitchChannel.id)
@@ -157,7 +157,7 @@ object NotificationManagerExtensions {
     }
 
     object Intents {
-        fun createTaskDetailsIntent(context: Context, task: Task): PendingIntent {
+        fun createTaskDetailsIntent(context: Context, task: Task, instance: TaskInstance): PendingIntent {
             val intent = Intent(
                 context,
                 TaskDetailsActivity::class.java
@@ -165,16 +165,16 @@ object NotificationManagerExtensions {
 
             return PendingIntent.getActivity(
                 context,
-                DetailsActivityRequestCode,
+                getInstanceNotificationId(task, instance) + DetailsActivityRequestCode,
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT
+                PendingIntent.FLAG_ONE_SHOT
             )
         }
 
         fun createDismissIntent(context: Context, task: Task, instance: TaskInstance): PendingIntent {
             return PendingIntent.getBroadcast(
                 context,
-                DetailsActivityRequestCode,
+                getInstanceNotificationId(task, instance) + DismissInstanceRequestCode,
                 Intent(DismissReceiver.Action).apply {
                     putTaskId(DismissReceiver.ExtraTask, task.id)
                     putInstanceId(DismissReceiver.ExtraInstance, instance.id)
@@ -186,7 +186,7 @@ object NotificationManagerExtensions {
         fun createPostponeIntent(context: Context, task: Task, instance: TaskInstance): PendingIntent {
             return PendingIntent.getBroadcast(
                 context,
-                DetailsActivityRequestCode,
+                getInstanceNotificationId(task, instance) + PostponeInstanceRequestCode,
                 Intent(PostponeReceiver.Action).apply {
                     val by = PreferenceManager.getDefaultSharedPreferences(context).getPostponeLength()
                     putTaskId(PostponeReceiver.ExtraTask, task.id)
@@ -198,6 +198,8 @@ object NotificationManagerExtensions {
         }
 
         private const val DetailsActivityRequestCode: Int = 1
+        private const val DismissInstanceRequestCode: Int = 2
+        private const val PostponeInstanceRequestCode: Int = 3
     }
 
     data class Config(
@@ -247,7 +249,7 @@ object NotificationManagerExtensions {
                 val InstanceContextSwitchChannel: Channel = Channel(
                     id = "eventually.client.scheduling.notification_channel_instance_context_switch",
                     importance = NotificationManager.IMPORTANCE_HIGH,
-                    light = Color.CYAN,
+                    light = Color.YELLOW,
                     vibrationEnabled = true
                 )
             }

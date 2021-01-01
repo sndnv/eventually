@@ -22,8 +22,6 @@ import eventually.client.activities.fragments.TaskCalendarFragment
 import eventually.client.activities.fragments.TaskListFragment
 import eventually.client.activities.fragments.TaskListItemAdapter
 import eventually.client.activities.fragments.TaskSummaryFragment
-import eventually.client.activities.receivers.DismissReceiver
-import eventually.client.activities.receivers.PostponeReceiver
 import eventually.client.scheduling.NotificationManagerExtensions.createInstanceNotificationChannels
 import eventually.client.scheduling.SchedulerService
 import eventually.client.settings.Settings
@@ -33,9 +31,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     private lateinit var pager: ViewPager2
 
     private lateinit var notificationManager: NotificationManager
-
-    private lateinit var dismissReceiver: DismissReceiver
-    private lateinit var postponeReceiver: PostponeReceiver
 
     private lateinit var topAppBar: MaterialToolbar
 
@@ -155,19 +150,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createInstanceNotificationChannels(applicationContext)
 
-        dismissReceiver = DismissReceiver()
-        postponeReceiver = PostponeReceiver()
-
-        registerReceiver(dismissReceiver, dismissReceiver.intentFilter)
-        registerReceiver(postponeReceiver, postponeReceiver.intentFilter)
-
         startForegroundService(Intent(this, SchedulerService::class.java))
-    }
-
-    override fun onDestroy() {
-        unregisterReceiver(dismissReceiver)
-        unregisterReceiver(postponeReceiver)
-        super.onDestroy()
     }
 
     override fun onSharedPreferenceChanged(updated: SharedPreferences, key: String?) {
