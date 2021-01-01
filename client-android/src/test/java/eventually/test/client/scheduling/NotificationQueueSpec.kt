@@ -1,10 +1,10 @@
 package eventually.test.client.scheduling
 
+import android.app.AlarmManager
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
 import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.notifications.NotificationViewModel
 import eventually.client.scheduling.NotificationQueue
@@ -227,27 +227,27 @@ class NotificationQueueSpec {
 
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val workManager = mockk<WorkManager>()
-        every { workManager.enqueueUniqueWork(any(), any(), any() as OneTimeWorkRequest) } returns mockk()
-        every { workManager.cancelUniqueWork(any()) } returns mockk()
+        val alarmManager = mockk<AlarmManager>()
+        justRun { alarmManager.setExactAndAllowWhileIdle(any(), any(), any()) }
+        justRun { alarmManager.cancel(any<PendingIntent>()) }
 
         val notificationManager = mockk<NotificationManager>()
         justRun { notificationManager.notify(any(), any()) }
         justRun { notificationManager.cancel(any()) }
 
-        runBlocking { queue.release(context, workManager, notificationManager, model) }
+        runBlocking { queue.release(context, alarmManager, notificationManager, model) }
 
         verify(exactly = 2) { model.put(any(), any(), any()) }
         verify(exactly = 1) { model.delete(any(), any()) }
 
-        verify(exactly = 1) { workManager.enqueueUniqueWork(any(), any(), any() as OneTimeWorkRequest) }
-        verify(exactly = 1) { workManager.cancelUniqueWork(any()) }
+        verify(exactly = 1) { alarmManager.setExactAndAllowWhileIdle(any(), any(), any()) }
+        verify(exactly = 1) { alarmManager.cancel(any<PendingIntent>()) }
 
         verify(exactly = 2) { notificationManager.notify(any(), any()) }
         verify(exactly = 1) { notificationManager.cancel(any()) }
 
         confirmVerified(model)
-        confirmVerified(workManager)
+        confirmVerified(alarmManager)
         confirmVerified(notificationManager)
     }
 

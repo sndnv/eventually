@@ -1,5 +1,6 @@
 package eventually.client.scheduling
 
+import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -16,7 +17,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.preference.PreferenceManager
-import androidx.work.WorkManager
 import eventually.client.activities.receivers.DismissReceiver
 import eventually.client.activities.receivers.PostponeReceiver
 import eventually.client.persistence.Converters.Companion.asSchedule
@@ -62,7 +62,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
     val evaluations: LiveData<Long> = providedEvaluations
 
     private inner class ServiceHandler(looper: Looper) : Handler(looper) {
-        private val workManager = WorkManager.getInstance(this@SchedulerService)
+        private val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         private val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         private val taskViewModel = TaskViewModel(application)
@@ -96,7 +96,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
                 notifications
                     .distinct(notificationViewModel)
-                    .release(this@SchedulerService, workManager, notificationManager, notificationViewModel)
+                    .release(this@SchedulerService, alarmManager, notificationManager, notificationViewModel)
             }
 
             val nextEvaluation =

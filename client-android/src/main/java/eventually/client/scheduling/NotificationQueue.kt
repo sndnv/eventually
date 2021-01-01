@@ -1,14 +1,14 @@
 package eventually.client.scheduling
 
+import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
-import androidx.work.WorkManager
 import eventually.client.persistence.notifications.NotificationViewModel
 import eventually.client.scheduling.NotificationManagerExtensions.deleteInstanceNotifications
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceContextSwitchNotification
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceExecutionNotification
-import eventually.client.scheduling.WorkManagerExtensions.deleteEvaluationAlarm
-import eventually.client.scheduling.WorkManagerExtensions.putEvaluationAlarm
+import eventually.client.scheduling.AlarmManagerExtensions.deleteEvaluationAlarm
+import eventually.client.scheduling.AlarmManagerExtensions.putEvaluationAlarm
 import eventually.core.scheduling.SchedulerOps
 import java.util.LinkedList
 import java.util.Queue
@@ -62,18 +62,18 @@ class NotificationQueue(
 
     suspend fun release(
         context: Context,
-        workManager: WorkManager,
+        alarmManager: AlarmManager,
         notificationManager: NotificationManager,
         notificationViewModel: NotificationViewModel
     ): NotificationQueue {
         notifications.forEach {
             when (it) {
                 is SchedulerOps.Notification.PutEvaluationAlarm -> {
-                    workManager.putEvaluationAlarm(it.instant)
+                    alarmManager.putEvaluationAlarm(context, it.instant)
                 }
 
                 is SchedulerOps.Notification.DeleteEvaluationAlarm -> {
-                    workManager.deleteEvaluationAlarm()
+                    alarmManager.deleteEvaluationAlarm(context)
                 }
 
                 is SchedulerOps.Notification.PutInstanceExecutionNotification -> {
