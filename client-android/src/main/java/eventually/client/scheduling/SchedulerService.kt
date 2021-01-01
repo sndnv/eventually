@@ -17,6 +17,8 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.preference.PreferenceManager
 import androidx.work.WorkManager
+import eventually.client.activities.receivers.DismissReceiver
+import eventually.client.activities.receivers.PostponeReceiver
 import eventually.client.persistence.Converters.Companion.asSchedule
 import eventually.client.persistence.notifications.NotificationViewModel
 import eventually.client.persistence.schedules.TaskScheduleEntity
@@ -43,6 +45,9 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
     private lateinit var handler: ServiceHandler
     private lateinit var config: TaskSummaryConfig
+
+    private lateinit var dismissReceiver: DismissReceiver
+    private lateinit var postponeReceiver: PostponeReceiver
 
     private val providedSchedules: MutableLiveData<Map<Int, TaskSchedule>> = MutableLiveData(emptyMap())
     private val providedSummary: MutableLiveData<TaskSummary> = MutableLiveData(TaskSummary.empty())
@@ -194,6 +199,19 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                 })
             }
         }
+
+        dismissReceiver = DismissReceiver()
+        postponeReceiver = PostponeReceiver()
+
+        registerReceiver(dismissReceiver, dismissReceiver.intentFilter)
+        registerReceiver(postponeReceiver, postponeReceiver.intentFilter)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        unregisterReceiver(dismissReceiver)
+        unregisterReceiver(postponeReceiver)
     }
 
     private fun requireConfig() {
