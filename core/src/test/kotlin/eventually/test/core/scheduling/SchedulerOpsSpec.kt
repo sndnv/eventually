@@ -212,6 +212,18 @@ class SchedulerOpsSpec : WordSpec({
             result.affectedSchedules shouldBe (listOf(task.id))
         }
 
+        "support updating existing tasks when set to inactive" {
+            val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
+
+            schedules.values.first().instances.isNotEmpty() shouldBe (true)
+            val instance = schedules.values.first().instances.values.first()
+
+            val result = SchedulerOps.put(schedules, SchedulerOps.Message.Put(task.copy(isActive = false)))
+
+            result.schedules.values.first().instances.isEmpty() shouldBe (true)
+            result.notifications shouldBe (listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id)))
+        }
+
         "support removing existing tasks" {
             val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
 
