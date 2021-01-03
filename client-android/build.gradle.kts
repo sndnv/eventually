@@ -27,6 +27,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.2.0")
     implementation("androidx.work:work-runtime-ktx:2.4.0")
     implementation("ru.cleverpumpkin:crunchycalendar:2.0.0")
+    implementation("ca.antonious:materialdaypicker:0.7.3")
 
     kapt("androidx.room:room-compiler:2.3.0-alpha04")
 

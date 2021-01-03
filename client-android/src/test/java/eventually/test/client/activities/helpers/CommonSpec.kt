@@ -17,6 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
@@ -100,6 +101,16 @@ class CommonSpec {
         } catch (e: java.lang.IllegalArgumentException) {
             assertThat(e.message, equalTo("Unexpected ChronoUnit string provided: [other]"))
         }
+    }
+
+    @Test
+    fun convertDaysOfTheWeekToStrings() {
+        val someDays = setOf(DayOfWeek.TUESDAY, DayOfWeek.SUNDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY)
+        val allDays = someDays + setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY)
+
+        assertThat(someDays.asString(), equalTo("Tue, Fri, Sat, Sun"))
+        assertThat(allDays.asString(), equalTo("Mon, Tue, Wed, Thu, Fri, Sat, Sun"))
+        assertThat(emptySet<DayOfWeek>().asString(), equalTo(""))
     }
 
     @Test

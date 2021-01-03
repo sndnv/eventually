@@ -109,6 +109,7 @@
     <string name="task_details_field_title_schedule_repeating">Repeating</string>
     <string name="task_details_field_title_schedule_repeating_start">Starting At</string>
     <string name="task_details_field_title_schedule_repeating_every">Every</string>
+    <string name="task_details_field_title_schedule_repeating_days">On</string>
     <string name="task_details_field_error_name">Name cannot be empty</string>
     <string name="task_details_field_error_goal">Goal cannot be empty</string>
     <string name="task_details_field_error_context_switch_duration">Duration cannot be empty or 0</string>
@@ -130,7 +131,8 @@
     <string name="task_preview_field_content_inactive">(disabled)</string>
     <string name="task_preview_field_content_context_switch">%d %s</string>
     <string name="task_preview_field_content_schedule_once">On %1$s at %2$s</string>
-    <string name="task_preview_field_content_schedule_repeating">Every %1$s %2$s starting from %3$s</string>
+    <string name="task_preview_field_content_schedule_repeating_every_day">Every %1$s %2$s starting from %3$s</string>
+    <string name="task_preview_field_content_schedule_repeating_on_days">Every %1$s %2$s starting from %3$s\nOn %4$s</string>
 
     <string name="task_preview_field_content_instance_execution">%s</string>
     <string name="task_preview_field_content_instance_execution_postponed">%s (postponed)</string>

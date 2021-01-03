@@ -19,6 +19,7 @@ import androidx.preference.PreferenceManager
 import eventually.client.R
 import eventually.client.activities.helpers.Common.StyledString
 import eventually.client.activities.helpers.Common.asQuantityString
+import eventually.client.activities.helpers.Common.asString
 import eventually.client.activities.helpers.Common.renderAsSpannable
 import eventually.client.activities.helpers.Common.toFields
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsDate
@@ -72,25 +73,36 @@ object TaskPreview {
             is Task.Schedule.Repeating -> {
                 val start = taskSchedule.start.formatAsTime(this)
                 val every = taskSchedule.every.toFields()
+                val days = taskSchedule.days.asString()
 
-                getString(R.string.task_preview_field_content_schedule_repeating)
-                    .renderAsSpannable(
-                        StyledString(
-                            placeholder = "%1\$s",
-                            content = every.first.toString(),
-                            style = StyleSpan(Typeface.BOLD)
-                        ),
-                        StyledString(
-                            placeholder = "%2\$s",
-                            content = every.second.asQuantityString(every.first, this),
-                            style = StyleSpan(Typeface.BOLD)
-                        ),
-                        StyledString(
-                            placeholder = "%3\$s",
-                            content = start,
-                            style = StyleSpan(Typeface.BOLD)
-                        )
+                getString(
+                    if (taskSchedule.days.size == 7) {
+                        R.string.task_preview_field_content_schedule_repeating_every_day
+                    } else {
+                        R.string.task_preview_field_content_schedule_repeating_on_days
+                    }
+                ).renderAsSpannable(
+                    StyledString(
+                        placeholder = "%1\$s",
+                        content = every.first.toString(),
+                        style = StyleSpan(Typeface.BOLD)
+                    ),
+                    StyledString(
+                        placeholder = "%2\$s",
+                        content = every.second.asQuantityString(every.first, this),
+                        style = StyleSpan(Typeface.BOLD)
+                    ),
+                    StyledString(
+                        placeholder = "%3\$s",
+                        content = start,
+                        style = StyleSpan(Typeface.BOLD)
+                    ),
+                    StyledString(
+                        placeholder = "%4\$s",
+                        content = days,
+                        style = StyleSpan(Typeface.BOLD)
                     )
+                )
             }
             else -> SpannableString("")
         }
