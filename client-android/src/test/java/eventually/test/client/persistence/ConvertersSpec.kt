@@ -14,6 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -55,8 +56,15 @@ class ConvertersSpec {
         val convertedOnce = converters.scheduleToString(originalOnce)
         val convertedRepeating = converters.scheduleToString(originalRepeating)
 
-        assertThat(convertedOnce, equalTo("""{"type":"once","instant":$instantSeconds}"""))
-        assertThat(convertedRepeating, equalTo("""{"type":"repeating","start":$startSeconds,"every":$durationSeconds}"""))
+        assertThat(
+            convertedOnce,
+            equalTo("""{"type":"once","instant":$instantSeconds}""")
+        )
+
+        assertThat(
+            convertedRepeating,
+            equalTo("""{"type":"repeating","start":$startSeconds,"every":$durationSeconds,"days":[1,2,3,4,5,6,7]}""")
+        )
 
         assertThat(converters.stringToSchedule(convertedOnce), equalTo(originalOnce))
         assertThat(converters.stringToSchedule(convertedRepeating), equalTo(originalRepeating))
@@ -180,7 +188,8 @@ class ConvertersSpec {
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = start,
-                every = Duration.ofMinutes(20)
+                every = Duration.ofMinutes(20),
+                days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
             ),
             contextSwitch = Duration.ofMinutes(5),
             isActive = true
@@ -195,7 +204,7 @@ class ConvertersSpec {
                 "name":"test-task",
                 "description":"test-description",
                 "goal":"test-goal",
-                "schedule":{"type":"repeating","start":${start.epochSecond},"every":1200},
+                "schedule":{"type":"repeating","start":${start.epochSecond},"every":1200,"days":[4,6,3]},
                 "context_switch":300,
                 "is_active":true
             }""".replace("\n", "").replace(" ", "")

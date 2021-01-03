@@ -1,7 +1,9 @@
 package eventually.core.model
 
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 
 data class Task(
     val id: Int,
@@ -19,12 +21,33 @@ data class Task(
             override fun next(after: Instant, within: Duration): List<Instant> = listOf(instant)
         }
 
-        data class Repeating(val start: Instant, val every: Duration) : Schedule() {
+        data class Repeating(
+            val start: Instant,
+            val every: Duration,
+            val days: Set<DayOfWeek>
+        ) : Schedule() {
             override fun next(after: Instant, within: Duration): List<Instant> {
-                return scheduleInstants(step = every)
-                    .filter { it.isAfter(after) }
-                    .take((within.seconds / every.seconds).coerceAtLeast(1L).toInt())
-                    .toList()
+                val withinEnd = after.plus(within)
+
+                val instants = scheduleInstants(step = every)
+                    .filter { it.isAfter(after) && days.contains(it.atZone(ZoneId.systemDefault()).dayOfWeek) }
+
+                tailrec fun collect(from: Iterator<Instant>, collected: List<Instant>): List<Instant> {
+                    val current = from.next()
+                    return when {
+                        collected.isEmpty() -> {
+                            collect(from = from, collected = collected + current)
+                        }
+                        withinEnd.isBefore(current) -> {
+                            collected
+                        }
+                        else -> {
+                            collect(from = from, collected = collected + current)
+                        }
+                    }
+                }
+
+                return collect(from = instants.iterator(), collected = emptyList())
             }
 
             private fun scheduleInstants(step: Duration): Sequence<Instant> = sequence {
@@ -34,6 +57,25 @@ data class Task(
                     yield(lastInstant)
                     lastInstant += step
                 }
+            }
+
+            companion object {
+                val DefaultDays: Set<DayOfWeek> = setOf(
+                    DayOfWeek.MONDAY,
+                    DayOfWeek.TUESDAY,
+                    DayOfWeek.WEDNESDAY,
+                    DayOfWeek.THURSDAY,
+                    DayOfWeek.FRIDAY,
+                    DayOfWeek.SATURDAY,
+                    DayOfWeek.SUNDAY
+                )
+
+                operator fun invoke(start: Instant, every: Duration): Repeating =
+                    Repeating(
+                        start = start,
+                        every = every,
+                        days = DefaultDays
+                    )
             }
         }
     }

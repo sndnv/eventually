@@ -10,6 +10,7 @@ import eventually.client.persistence.tasks.TaskEntity
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -150,6 +151,7 @@ class Converters {
                 json.addProperty("type", "repeating")
                 json.addProperty("start", schedule.start.epochSecond)
                 json.addProperty("every", schedule.every.seconds)
+                json.add("days", JsonArray().apply { schedule.days.forEach { day -> add(day.value) } })
                 json
             }
         }
@@ -169,9 +171,13 @@ class Converters {
                     val every = schedule.get("every")?.asLong
                     require(every != null) { "Expected 'every' field but none was found" }
 
+                    val days = schedule.get("days")?.asJsonArray
+                    require(days != null) { "Expected 'days' field but none was found" }
+
                     Task.Schedule.Repeating(
                         start = Instant.ofEpochSecond(start),
-                        every = Duration.ofSeconds(every)
+                        every = Duration.ofSeconds(every),
+                        days = days.map { day -> DayOfWeek.of(day.asInt) }.toSet()
                     )
                 }
 

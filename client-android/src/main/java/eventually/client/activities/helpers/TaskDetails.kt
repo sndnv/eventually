@@ -7,6 +7,7 @@ import android.widget.AutoCompleteTextView
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
+import ca.antonious.materialdaypicker.MaterialDayPicker
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputLayout
@@ -28,6 +29,7 @@ import eventually.client.settings.Settings.getDateTimeFormat
 import eventually.core.model.Task
 import kotlinx.android.synthetic.main.input_schedule_once.view.date
 import kotlinx.android.synthetic.main.input_schedule_once.view.time
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
@@ -56,6 +58,7 @@ object TaskDetails {
             scheduleRepeatingStartButton = binding.scheduleRepeating.start,
             scheduleRepeatingEveryDurationTypeField = binding.scheduleRepeating.every.durationType,
             scheduleRepeatingEveryDurationAmountField = binding.scheduleRepeating.every.durationAmount,
+            scheduleRepeatingDays = binding.scheduleRepeating.days,
             scheduleType = scheduleType,
             context = this
         )
@@ -197,8 +200,9 @@ object TaskDetails {
     private fun AppCompatActivity.initScheduleRepeating(scheduleRepeating: View, now: Instant, task: Task?) {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-        val scheduleRepeatingInstant =
-            (task?.schedule as? Task.Schedule.Repeating)?.start ?: now.plus(Defaults.ScheduleTimeDuration)
+        val schedule = task?.schedule as? Task.Schedule.Repeating
+
+        val scheduleRepeatingInstant = schedule?.start ?: now.plus(Defaults.ScheduleTimeDuration)
 
         val scheduleRepeatingStartButton = scheduleRepeating.findViewById<Button>(R.id.start)
         scheduleRepeatingStartButton.text = scheduleRepeatingInstant.formatAsTime(this)
@@ -222,6 +226,10 @@ object TaskDetails {
 
             timePicker.show(supportFragmentManager, timePicker.toString())
         }
+
+        val days = schedule?.days ?: Task.Schedule.Repeating.DefaultDays
+        val daysPicker = scheduleRepeating.findViewById<MaterialDayPicker>(R.id.days)
+        daysPicker.setSelectedDays(days.map { MaterialDayPicker.Weekday.valueOf(it.name) })
     }
 
     object Defaults {
@@ -251,6 +259,7 @@ object TaskDetails {
         private val scheduleRepeatingStartButton: Button,
         private val scheduleRepeatingEveryDurationTypeField: TextInputLayout,
         private val scheduleRepeatingEveryDurationAmountField: TextInputLayout,
+        private val scheduleRepeatingDays: MaterialDayPicker,
         private val scheduleType: AtomicReference<String>,
         private val context: Context
     ) {
@@ -299,7 +308,6 @@ object TaskDetails {
             isActive = isActive
         )
 
-
         fun toUpdatedTask(task: Int): Task = toNewTask().copy(id = task)
 
         val name: String
@@ -334,7 +342,13 @@ object TaskDetails {
                     val durationType = scheduleRepeatingEveryDurationTypeField.editText?.text.toString().asChronoUnit(context)
                     val durationAmount = scheduleRepeatingEveryDurationAmountField.editText?.text.toString().toLong()
                     val every = Duration.of(durationAmount, durationType)
-                    Task.Schedule.Repeating(start = start, every = every)
+                    val days = if (scheduleRepeatingDays.selectedDays.isEmpty()) {
+                        Task.Schedule.Repeating.DefaultDays
+                    } else {
+                        scheduleRepeatingDays.selectedDays.map { DayOfWeek.valueOf(it.name) }.toSet()
+                    }
+
+                    Task.Schedule.Repeating(start = start, every = every, days = days)
                 }
                 else -> {
                     throw IllegalArgumentException("Unexpected schedule type encountered: [$actualScheduleType]")

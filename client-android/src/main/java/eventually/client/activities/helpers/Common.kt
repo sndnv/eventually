@@ -5,8 +5,11 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.CharacterStyle
 import eventually.client.R
+import java.time.DayOfWeek
 import java.time.Duration
+import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 object Common {
     fun Duration.toFields(): Pair<Int, ChronoUnit> {
@@ -51,6 +54,9 @@ object Common {
         this == context.getString(R.string.duration_plural_seconds) -> ChronoUnit.SECONDS
         else -> throw IllegalArgumentException("Unexpected ChronoUnit string provided: [$this]")
     }
+
+    fun Set<DayOfWeek>.asString(): String =
+        sorted().joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
 
     data class StyledString(val placeholder: String, val content: String, val style: CharacterStyle)
 
