@@ -71,7 +71,8 @@ object TaskPreview {
                     )
             }
             is Task.Schedule.Repeating -> {
-                val start = taskSchedule.start.formatAsTime(this)
+                val date = taskSchedule.start.formatAsDate(this)
+                val time = taskSchedule.start.formatAsTime(this)
                 val every = taskSchedule.every.toFields()
                 val days = taskSchedule.days.asString()
 
@@ -84,21 +85,26 @@ object TaskPreview {
                 ).renderAsSpannable(
                     StyledString(
                         placeholder = "%1\$s",
-                        content = every.first.toString(),
+                        content = date,
                         style = StyleSpan(Typeface.BOLD)
                     ),
                     StyledString(
                         placeholder = "%2\$s",
-                        content = every.second.asQuantityString(every.first, this),
+                        content = time,
                         style = StyleSpan(Typeface.BOLD)
                     ),
                     StyledString(
                         placeholder = "%3\$s",
-                        content = start,
+                        content = every.first.toString(),
                         style = StyleSpan(Typeface.BOLD)
                     ),
                     StyledString(
                         placeholder = "%4\$s",
+                        content = every.second.asQuantityString(every.first, this),
+                        style = StyleSpan(Typeface.BOLD)
+                    ),
+                    StyledString(
+                        placeholder = "%5\$s",
                         content = days,
                         style = StyleSpan(Typeface.BOLD)
                     )
