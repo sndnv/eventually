@@ -5,8 +5,10 @@ import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.CharacterStyle
 import eventually.client.R
+import eventually.core.model.Task
 import java.time.DayOfWeek
 import java.time.Duration
+import java.time.Period
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -31,7 +33,24 @@ object Common {
         }
     }
 
+    fun Period.toFields(): Pair<Int, ChronoUnit> {
+        return when {
+            years > 0 -> years to ChronoUnit.YEARS
+            months > 0 -> months to ChronoUnit.MONTHS
+            else -> days to ChronoUnit.DAYS
+        }
+    }
+
+    fun Task.Schedule.Repeating.Interval.toFields(): Pair<Int, ChronoUnit> {
+        return when (this) {
+            is Task.Schedule.Repeating.Interval.DurationInterval -> this.value.toFields()
+            is Task.Schedule.Repeating.Interval.PeriodInterval -> this.value.toFields()
+        }
+    }
+
     fun ChronoUnit.asString(context: Context): String = when {
+        this == ChronoUnit.YEARS -> context.getString(R.string.duration_plural_years)
+        this == ChronoUnit.MONTHS -> context.getString(R.string.duration_plural_months)
         this == ChronoUnit.DAYS -> context.getString(R.string.duration_plural_days)
         this == ChronoUnit.HOURS -> context.getString(R.string.duration_plural_hours)
         this == ChronoUnit.MINUTES -> context.getString(R.string.duration_plural_minutes)
@@ -40,6 +59,8 @@ object Common {
     }
 
     fun ChronoUnit.asQuantityString(amount: Int, context: Context): String = when {
+        this == ChronoUnit.YEARS -> context.resources.getQuantityString(R.plurals.duration_years, amount)
+        this == ChronoUnit.MONTHS -> context.resources.getQuantityString(R.plurals.duration_months, amount)
         this == ChronoUnit.DAYS -> context.resources.getQuantityString(R.plurals.duration_days, amount)
         this == ChronoUnit.HOURS -> context.resources.getQuantityString(R.plurals.duration_hours, amount)
         this == ChronoUnit.MINUTES -> context.resources.getQuantityString(R.plurals.duration_minutes, amount)
@@ -48,6 +69,8 @@ object Common {
     }
 
     fun String.asChronoUnit(context: Context): ChronoUnit = when {
+        this == context.getString(R.string.duration_plural_years) -> ChronoUnit.YEARS
+        this == context.getString(R.string.duration_plural_months) -> ChronoUnit.MONTHS
         this == context.getString(R.string.duration_plural_days) -> ChronoUnit.DAYS
         this == context.getString(R.string.duration_plural_hours) -> ChronoUnit.HOURS
         this == context.getString(R.string.duration_plural_minutes) -> ChronoUnit.MINUTES

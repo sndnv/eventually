@@ -189,6 +189,14 @@
     <string name="date_time_format_yesterday">Yesterday</string>
     <string name="date_time_format_today">Today</string>
     <string name="date_time_format_tomorrow">Tomorrow</string>
+    <plurals name="duration_years">
+        <item quantity="one">year</item>
+        <item quantity="other">years</item>
+    </plurals>
+    <plurals name="duration_months">
+        <item quantity="one">month</item>
+        <item quantity="other">months</item>
+    </plurals>
     <plurals name="duration_days">
         <item quantity="one">day</item>
         <item quantity="other">days</item>
@@ -205,6 +213,8 @@
         <item quantity="one">second</item>
         <item quantity="other">seconds</item>
     </plurals>
+    <string name="duration_plural_years">years</string>
+    <string name="duration_plural_months">months</string>
     <string name="duration_plural_days">days</string>
     <string name="duration_plural_hours">hours</string>
     <string name="duration_plural_minutes">minutes</string>

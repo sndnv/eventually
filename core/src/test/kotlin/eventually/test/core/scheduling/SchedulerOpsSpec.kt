@@ -1,6 +1,7 @@
 package eventually.test.core.scheduling
 
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
 import eventually.core.model.TaskSummaryConfig
@@ -43,7 +44,7 @@ class SchedulerOpsSpec : WordSpec({
             val disabledTask = task.copy(id = 4, isActive = false)
             val repeatingTask = task.copy(
                 id = 5,
-                schedule = Task.Schedule.Repeating(start = now, every = Duration.ofMinutes(5)),
+                schedule = Task.Schedule.Repeating(start = now, every = Duration.ofMinutes(5).toInterval()),
                 contextSwitch = config.summarySize
             )
 

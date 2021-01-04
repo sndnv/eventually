@@ -8,6 +8,7 @@ import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.notifications.NotificationEntityDao
 import eventually.client.persistence.notifications.NotificationRepository
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.test.client.await
 import kotlinx.coroutines.runBlocking
@@ -98,7 +99,7 @@ class NotificationRepositorySpec {
         goal = "test-goal",
         schedule = Task.Schedule.Repeating(
             start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-            every = Duration.ofMinutes(20)
+            every = Duration.ofMinutes(20).toInterval()
         ),
         contextSwitch = Duration.ofMinutes(5),
         isActive = true

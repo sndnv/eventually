@@ -9,6 +9,7 @@ import eventually.client.serialization.Extras.requireInstanceId
 import eventually.client.serialization.Extras.requireTask
 import eventually.client.serialization.Extras.requireTaskId
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -116,7 +117,7 @@ class TaskManagementSpec {
         goal = "test-goal",
         schedule = Task.Schedule.Repeating(
             start = Instant.now().truncatedTo(ChronoUnit.SECONDS),
-            every = Duration.ofMinutes(20)
+            every = Duration.ofMinutes(20).toInterval()
         ),
         contextSwitch = Duration.ofMinutes(5),
         isActive = true

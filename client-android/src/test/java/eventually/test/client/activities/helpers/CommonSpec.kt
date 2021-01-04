@@ -10,6 +10,7 @@ import eventually.client.activities.helpers.Common.asQuantityString
 import eventually.client.activities.helpers.Common.asString
 import eventually.client.activities.helpers.Common.renderAsSpannable
 import eventually.client.activities.helpers.Common.toFields
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Assert.fail
@@ -19,6 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.DayOfWeek
 import java.time.Duration
+import java.time.Period
 import java.time.temporal.ChronoUnit
 
 @RunWith(RobolectricTestRunner::class)
@@ -49,9 +51,30 @@ class CommonSpec {
     }
 
     @Test
+    fun convertPeriodsToFields() {
+        assertThat(Period.ofDays(0).toFields(), equalTo(Pair(0, ChronoUnit.DAYS)))
+        assertThat(Period.ofDays(1).toFields(), equalTo(Pair(1, ChronoUnit.DAYS)))
+        assertThat(Period.ofDays(60).toFields(), equalTo(Pair(60, ChronoUnit.DAYS)))
+
+        assertThat(Period.ofMonths(1).toFields(), equalTo(Pair(1, ChronoUnit.MONTHS)))
+        assertThat(Period.ofMonths(60).toFields(), equalTo(Pair(60, ChronoUnit.MONTHS)))
+
+        assertThat(Period.ofYears(1).toFields(), equalTo(Pair(1, ChronoUnit.YEARS)))
+        assertThat(Period.ofYears(60).toFields(), equalTo(Pair(60, ChronoUnit.YEARS)))
+    }
+
+    @Test
+    fun convertIntervalsToFields() {
+        assertThat(Duration.ofSeconds(21).toInterval().toFields(), equalTo(Pair(21, ChronoUnit.SECONDS)))
+        assertThat(Period.ofMonths(42).toInterval().toFields(), equalTo(Pair(42, ChronoUnit.MONTHS)))
+    }
+
+    @Test
     fun convertChronoUnitsToStrings() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
+        assertThat(ChronoUnit.YEARS.asString(context), equalTo("years"))
+        assertThat(ChronoUnit.MONTHS.asString(context), equalTo("months"))
         assertThat(ChronoUnit.DAYS.asString(context), equalTo("days"))
         assertThat(ChronoUnit.HOURS.asString(context), equalTo("hours"))
         assertThat(ChronoUnit.MINUTES.asString(context), equalTo("minutes"))
@@ -69,6 +92,10 @@ class CommonSpec {
     fun convertChronoUnitsToQualifiedStrings() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
+        assertThat(ChronoUnit.YEARS.asQuantityString(amount = 1, context), equalTo("year"))
+        assertThat(ChronoUnit.YEARS.asQuantityString(amount = 10, context), equalTo("years"))
+        assertThat(ChronoUnit.MONTHS.asQuantityString(amount = 1, context), equalTo("month"))
+        assertThat(ChronoUnit.MONTHS.asQuantityString(amount = 10, context), equalTo("months"))
         assertThat(ChronoUnit.DAYS.asQuantityString(amount = 1, context), equalTo("day"))
         assertThat(ChronoUnit.DAYS.asQuantityString(amount = 10, context), equalTo("days"))
         assertThat(ChronoUnit.HOURS.asQuantityString(amount = 1, context), equalTo("hour"))
@@ -90,6 +117,8 @@ class CommonSpec {
     fun convertStringsToChronoUnits() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
+        assertThat("years".asChronoUnit(context), equalTo(ChronoUnit.YEARS))
+        assertThat("months".asChronoUnit(context), equalTo(ChronoUnit.MONTHS))
         assertThat("days".asChronoUnit(context), equalTo(ChronoUnit.DAYS))
         assertThat("hours".asChronoUnit(context), equalTo(ChronoUnit.HOURS))
         assertThat("minutes".asChronoUnit(context), equalTo(ChronoUnit.MINUTES))

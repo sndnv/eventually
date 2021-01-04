@@ -8,6 +8,7 @@ import eventually.client.persistence.schedules.TaskScheduleEntity
 import eventually.client.persistence.schedules.TaskScheduleEntityDatabase
 import eventually.client.persistence.schedules.TaskScheduleViewModel
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
 import eventually.test.client.await
@@ -92,7 +93,7 @@ class TaskScheduleViewModelSpec {
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20)
+                every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
             isActive = true

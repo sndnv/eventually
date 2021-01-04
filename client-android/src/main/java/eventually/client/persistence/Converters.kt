@@ -8,11 +8,13 @@ import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.schedules.TaskScheduleEntity
 import eventually.client.persistence.tasks.TaskEntity
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
+import java.time.Period
 import java.util.UUID
 
 class Converters {
@@ -30,6 +32,16 @@ class Converters {
     @TypeConverter
     fun stringToSchedule(schedule: String?): Task.Schedule? = schedule?.let {
         jsonToSchedule(Gson().fromJson(schedule, JsonObject::class.java))
+    }
+
+    @TypeConverter
+    fun intervalToString(interval: Task.Schedule.Repeating.Interval?): String? = interval?.let {
+        Gson().toJson(intervalToJson(interval))
+    }
+
+    @TypeConverter
+    fun stringToInterval(interval: String?): Task.Schedule.Repeating.Interval? = interval?.let {
+        jsonToInterval(Gson().fromJson(interval, JsonObject::class.java))
     }
 
     @TypeConverter
@@ -138,6 +150,52 @@ class Converters {
             hash = instance.hashCode()
         )
 
+        private fun intervalToJson(interval: Task.Schedule.Repeating.Interval): JsonObject {
+            val json = JsonObject()
+
+            when (interval) {
+                is Task.Schedule.Repeating.Interval.DurationInterval -> {
+                    json.addProperty("unit", "seconds")
+                    json.addProperty("amount", interval.value.seconds)
+                }
+
+                is Task.Schedule.Repeating.Interval.PeriodInterval -> {
+                    val (amount, unit) = when {
+                        interval.value.days > 0 -> interval.value.days to "days"
+                        interval.value.months > 0 -> interval.value.months to "months"
+                        else -> interval.value.years to "years"
+                    }
+
+                    json.addProperty("unit", unit)
+                    json.addProperty("amount", amount)
+                }
+            }
+
+            return json
+        }
+
+        private fun jsonToInterval(interval: JsonObject): Task.Schedule.Repeating.Interval {
+            val amount = interval.get("amount")?.asLong
+            require(amount != null) { "Expected 'amount' field but none was found" }
+
+            return when (val unit = interval.get("unit")?.asString) {
+                "seconds" -> {
+                    Duration.ofSeconds(amount).toInterval()
+                }
+
+                is String -> {
+                    when (unit) {
+                        "days" -> Period.ofDays(amount.toInt())
+                        "months" -> Period.ofMonths(amount.toInt())
+                        "years" -> Period.ofYears(amount.toInt())
+                        else -> throw IllegalArgumentException("Unexpected period unit provided: [$unit]")
+                    }.toInterval()
+                }
+
+                else -> throw IllegalArgumentException("Expected 'unit' field but none was found")
+            }
+        }
+
         private fun scheduleToJson(schedule: Task.Schedule): JsonObject = when (schedule) {
             is Task.Schedule.Once -> {
                 val json = JsonObject()
@@ -150,7 +208,7 @@ class Converters {
                 val json = JsonObject()
                 json.addProperty("type", "repeating")
                 json.addProperty("start", schedule.start.epochSecond)
-                json.addProperty("every", schedule.every.seconds)
+                json.add("every", intervalToJson(schedule.every))
                 json.add("days", JsonArray().apply { schedule.days.forEach { day -> add(day.value) } })
                 json
             }
@@ -168,7 +226,7 @@ class Converters {
                     val start = schedule.get("start")?.asLong
                     require(start != null) { "Expected 'start' field but none was found" }
 
-                    val every = schedule.get("every")?.asLong
+                    val every = schedule.get("every")?.asJsonObject
                     require(every != null) { "Expected 'every' field but none was found" }
 
                     val days = schedule.get("days")?.asJsonArray
@@ -176,7 +234,7 @@ class Converters {
 
                     Task.Schedule.Repeating(
                         start = Instant.ofEpochSecond(start),
-                        every = Duration.ofSeconds(every),
+                        every = jsonToInterval(every),
                         days = days.map { day -> DayOfWeek.of(day.asInt) }.toSet()
                     )
                 }

@@ -1,13 +1,18 @@
 package eventually.test.core.model
 
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.WordSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.Period
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -42,7 +47,7 @@ class TaskSpec : WordSpec({
 
                 val futureSchedule = Task.Schedule.Repeating(
                     start = originalTime.atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                    every = repetitionDuration,
+                    every = repetitionDuration.toInterval(),
                     days = Task.Schedule.Repeating.DefaultDays
                 )
 
@@ -78,12 +83,11 @@ class TaskSpec : WordSpec({
             val today = ZonedDateTime.now()
             val tomorrow = today.plusDays(1)
 
-            val duration = Duration.ofDays(1)
             val within = Duration.ofDays(7)
 
             val schedule = Task.Schedule.Repeating(
                 start = today.toInstant(),
-                every = duration,
+                every = Period.ofDays(1).toInterval(),
                 days = setOf(
                     today.dayOfWeek,
                     tomorrow.dayOfWeek
@@ -97,6 +101,60 @@ class TaskSpec : WordSpec({
             next.size shouldBe (expected)
             next.first() shouldBe (tomorrow.toInstant())
             next.last() shouldBe (today.plusWeeks(1).toInstant())
+        }
+
+        "support scheduling repeating events with multiple interval unit types" {
+            val now = Instant.now()
+
+            fun nextInstant(forInterval: Task.Schedule.Repeating.Interval) =
+                Task.Schedule.Repeating(start = now, every = forInterval)
+                    .next(now, within = Duration.ofMinutes(5)).first()
+
+            nextInstant(forInterval = Duration.ofSeconds(1).toInterval()) shouldBe (now.plus(1, ChronoUnit.SECONDS))
+            nextInstant(forInterval = Duration.ofMinutes(2).toInterval()) shouldBe (now.plus(2, ChronoUnit.MINUTES))
+            nextInstant(forInterval = Duration.ofHours(3).toInterval()) shouldBe (now.plus(3, ChronoUnit.HOURS))
+            nextInstant(forInterval = Period.ofDays(4).toInterval()) shouldBe (now.plus(4, ChronoUnit.DAYS))
+            nextInstant(forInterval = Period.ofMonths(5).toInterval()) shouldBe (now.atZone(ZoneId.systemDefault())
+                .plus(5, ChronoUnit.MONTHS).toInstant())
+            nextInstant(forInterval = Period.ofYears(6).toInterval()) shouldBe (now.atZone(ZoneId.systemDefault())
+                .plus(6, ChronoUnit.YEARS).toInstant())
+        }
+
+        "support duration-based intervals for repeating schedules" {
+            val duration = Duration.ofSeconds(42)
+            val scheduleInterval = duration.toInterval()
+
+            (scheduleInterval is Task.Schedule.Repeating.Interval.DurationInterval) shouldBe (true)
+            scheduleInterval.amount() shouldBe (duration)
+        }
+
+        "support period-based intervals for repeating schedules" {
+            val period = Period.ofYears(42)
+            val scheduleInterval = period.toInterval()
+
+            (scheduleInterval is Task.Schedule.Repeating.Interval.PeriodInterval) shouldBe (true)
+            scheduleInterval.amount() shouldBe (period)
+
+            val yearsWithMonths = shouldThrow<IllegalArgumentException> {
+                Period.of(1, 2, 0).toInterval()
+            }
+
+            val yearsWithMonthsAndDays = shouldThrow<IllegalArgumentException> {
+                Period.of(1, 2, 3).toInterval()
+            }
+
+            yearsWithMonths.message shouldContain ("with days: [false], with months: [true], with years: [true]")
+            yearsWithMonthsAndDays.message shouldContain ("with days: [true], with months: [true], with years: [true]")
+        }
+
+        "support creating intervals for repeating schedules" {
+            Task.Schedule.Repeating.Interval.of(1, ChronoUnit.YEARS).amount() shouldBe (Period.ofYears(1))
+            Task.Schedule.Repeating.Interval.of(2, ChronoUnit.MONTHS).amount() shouldBe (Period.ofMonths(2))
+            Task.Schedule.Repeating.Interval.of(3, ChronoUnit.DAYS).amount() shouldBe (Period.ofDays(3))
+            Task.Schedule.Repeating.Interval.of(4, ChronoUnit.HOURS).amount() shouldBe (Duration.ofHours(4))
+            Task.Schedule.Repeating.Interval.of(5, ChronoUnit.MINUTES).amount() shouldBe (Duration.ofMinutes(5))
+            Task.Schedule.Repeating.Interval.of(6, ChronoUnit.SECONDS).amount() shouldBe (Duration.ofSeconds(6))
+            Task.Schedule.Repeating.Interval.of(7, ChronoUnit.MILLIS).amount() shouldBe (Duration.ofMillis(7))
         }
     }
 })
