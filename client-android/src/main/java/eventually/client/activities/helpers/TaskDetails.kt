@@ -22,7 +22,6 @@ import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
 import eventually.client.activities.helpers.DateTimeExtensions.parseAsDate
 import eventually.client.activities.helpers.DateTimeExtensions.parseAsDateTime
 import eventually.client.activities.helpers.DateTimeExtensions.parseAsLocalTime
-import eventually.client.activities.helpers.DateTimeExtensions.parseAsTime
 import eventually.client.databinding.LayoutTaskDetailsBinding
 import eventually.client.settings.Settings
 import eventually.client.settings.Settings.getDateTimeFormat
@@ -55,7 +54,8 @@ object TaskDetails {
             isActiveField = binding.isActive,
             scheduleOnceDateButton = binding.scheduleOnce.date,
             scheduleOnceTimeButton = binding.scheduleOnce.time,
-            scheduleRepeatingStartButton = binding.scheduleRepeating.start,
+            scheduleRepeatingStartTimeButton = binding.scheduleRepeating.startTime,
+            scheduleRepeatingStartDateButton = binding.scheduleRepeating.startDate,
             scheduleRepeatingEveryDurationTypeField = binding.scheduleRepeating.every.durationType,
             scheduleRepeatingEveryDurationAmountField = binding.scheduleRepeating.every.durationAmount,
             scheduleRepeatingDays = binding.scheduleRepeating.days,
@@ -204,11 +204,28 @@ object TaskDetails {
 
         val scheduleRepeatingInstant = schedule?.start ?: now.plus(Defaults.ScheduleTimeDuration)
 
-        val scheduleRepeatingStartButton = scheduleRepeating.findViewById<Button>(R.id.start)
-        scheduleRepeatingStartButton.text = scheduleRepeatingInstant.formatAsTime(this)
+        val scheduleRepeatingStartDateButton = scheduleRepeating.findViewById<Button>(R.id.start_date)
+        scheduleRepeatingStartDateButton.text = scheduleRepeatingInstant.formatAsDate(this)
 
-        scheduleRepeatingStartButton.setOnClickListener {
-            val selected = scheduleRepeatingStartButton.text.parseAsLocalTime(this)
+        scheduleRepeatingStartDateButton.setOnClickListener {
+            val selected = scheduleRepeatingStartDateButton.text.parseAsDate(this)
+
+            val datePicker = MaterialDatePicker.Builder.datePicker()
+                .setSelection(selected.toEpochMilli())
+                .build()
+
+            datePicker.addOnPositiveButtonClickListener { selection ->
+                scheduleRepeatingStartDateButton.text = Instant.ofEpochMilli(selection).formatAsDate(this)
+            }
+
+            datePicker.show(supportFragmentManager, datePicker.toString())
+        }
+
+        val scheduleRepeatingStartTimeButton = scheduleRepeating.findViewById<Button>(R.id.start_time)
+        scheduleRepeatingStartTimeButton.text = scheduleRepeatingInstant.formatAsTime(this)
+
+        scheduleRepeatingStartTimeButton.setOnClickListener {
+            val selected = scheduleRepeatingStartTimeButton.text.parseAsLocalTime(this)
 
             val timePickerBuilder = MaterialTimePicker.Builder()
                 .setHour(selected.hour)
@@ -221,7 +238,7 @@ object TaskDetails {
             val timePicker = timePickerBuilder.build()
 
             timePicker.addOnPositiveButtonClickListener {
-                scheduleRepeatingStartButton.text = LocalTime.of(timePicker.hour, timePicker.minute).formatAsTime(this)
+                scheduleRepeatingStartTimeButton.text = LocalTime.of(timePicker.hour, timePicker.minute).formatAsTime(this)
             }
 
             timePicker.show(supportFragmentManager, timePicker.toString())
@@ -256,7 +273,8 @@ object TaskDetails {
         private val isActiveField: SwitchMaterial,
         private val scheduleOnceDateButton: Button,
         private val scheduleOnceTimeButton: Button,
-        private val scheduleRepeatingStartButton: Button,
+        private val scheduleRepeatingStartTimeButton: Button,
+        private val scheduleRepeatingStartDateButton: Button,
         private val scheduleRepeatingEveryDurationTypeField: TextInputLayout,
         private val scheduleRepeatingEveryDurationAmountField: TextInputLayout,
         private val scheduleRepeatingDays: MaterialDayPicker,
@@ -338,10 +356,14 @@ object TaskDetails {
                     Task.Schedule.Once(instant = instant)
                 }
                 "repeating" -> {
-                    val start = scheduleRepeatingStartButton.text.parseAsTime(context)
+                    val start = (scheduleRepeatingStartDateButton.text to scheduleRepeatingStartTimeButton.text)
+                        .parseAsDateTime(context)
+
                     val durationType = scheduleRepeatingEveryDurationTypeField.editText?.text.toString().asChronoUnit(context)
                     val durationAmount = scheduleRepeatingEveryDurationAmountField.editText?.text.toString().toLong()
+
                     val every = Duration.of(durationAmount, durationType)
+
                     val days = if (scheduleRepeatingDays.selectedDays.isEmpty()) {
                         Task.Schedule.Repeating.DefaultDays
                     } else {
