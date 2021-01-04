@@ -10,6 +10,7 @@ import eventually.client.serialization.Extras.requireInstanceId
 import eventually.client.serialization.Extras.requireTask
 import eventually.client.serialization.Extras.requireTaskId
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -37,7 +38,7 @@ class ExtrasSpec {
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20)
+                every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
             isActive = true

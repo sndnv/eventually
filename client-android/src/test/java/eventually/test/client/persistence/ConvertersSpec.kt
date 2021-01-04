@@ -5,6 +5,7 @@ import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.schedules.TaskScheduleEntity
 import eventually.client.persistence.tasks.TaskEntity
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
 import org.hamcrest.CoreMatchers.equalTo
@@ -19,6 +20,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.Period
 import java.time.ZoneOffset
 import java.util.UUID
 
@@ -37,6 +39,90 @@ class ConvertersSpec {
     }
 
     @Test
+    fun convertRepeatingScheduleIntervals() {
+        val converters = Converters()
+
+        val durationSeconds = 42L
+        val periodYears = 1
+        val periodMonths = 2
+        val periodDays = 3
+
+        val originalDuration = Duration.ofSeconds(durationSeconds).toInterval()
+        val originalPeriodYears = Period.ofYears(periodYears).toInterval()
+        val originalPeriodMonths = Period.ofMonths(periodMonths).toInterval()
+        val originalPeriodDays = Period.ofDays(periodDays).toInterval()
+
+        val convertedDuration = converters.intervalToString(originalDuration)
+        val convertedPeriodYears = converters.intervalToString(originalPeriodYears)
+        val convertedPeriodMonths = converters.intervalToString(originalPeriodMonths)
+        val convertedPeriodDays = converters.intervalToString(originalPeriodDays)
+
+        assertThat(
+            convertedDuration,
+            equalTo("""{"unit":"seconds","amount":$durationSeconds}""")
+        )
+
+        assertThat(
+            convertedPeriodYears,
+            equalTo("""{"unit":"years","amount":$periodYears}""")
+        )
+
+        assertThat(
+            convertedPeriodMonths,
+            equalTo("""{"unit":"months","amount":$periodMonths}""")
+        )
+
+        assertThat(
+            convertedPeriodDays,
+            equalTo("""{"unit":"days","amount":$periodDays}""")
+        )
+
+        assertThat(converters.stringToInterval(convertedDuration), equalTo(originalDuration))
+        assertThat(converters.stringToInterval(convertedPeriodYears), equalTo(originalPeriodYears))
+        assertThat(converters.stringToInterval(convertedPeriodMonths), equalTo(originalPeriodMonths))
+        assertThat(converters.stringToInterval(convertedPeriodDays), equalTo(originalPeriodDays))
+
+        assertThat(converters.intervalToString(interval = null), equalTo(null))
+        assertThat(converters.stringToInterval(interval = null), equalTo(null))
+    }
+
+    @Test
+    fun failToConvertRepeatingScheduleIntervalsOnNoAmount() {
+        val converters = Converters()
+
+        try {
+            converters.stringToInterval("""{"unit":"seconds"}""")
+            fail("Unexpected result received")
+        } catch (e: IllegalArgumentException) {
+            assertThat(e.message, equalTo("Expected 'amount' field but none was found"))
+        }
+    }
+
+    @Test
+    fun failToConvertRepeatingScheduleIntervalsOnNoUnit() {
+        val converters = Converters()
+
+        try {
+            converters.stringToInterval("""{"amount":42}""")
+            fail("Unexpected result received")
+        } catch (e: IllegalArgumentException) {
+            assertThat(e.message, equalTo("Expected 'unit' field but none was found"))
+        }
+    }
+
+    @Test
+    fun failToConvertRepeatingScheduleIntervalsOnInvalidPeriodUnit() {
+        val converters = Converters()
+
+        try {
+            converters.stringToInterval("""{"amount":42,"unit":"weeks"}""")
+            fail("Unexpected result received")
+        } catch (e: IllegalArgumentException) {
+            assertThat(e.message, equalTo("Unexpected period unit provided: [weeks]"))
+        }
+    }
+
+    @Test
     fun convertTaskSchedules() {
         val converters = Converters()
 
@@ -50,7 +136,7 @@ class ConvertersSpec {
 
         val originalRepeating = Task.Schedule.Repeating(
             start = Instant.ofEpochSecond(startSeconds),
-            every = Duration.ofSeconds(durationSeconds)
+            every = Duration.ofSeconds(durationSeconds).toInterval()
         )
 
         val convertedOnce = converters.scheduleToString(originalOnce)
@@ -63,7 +149,14 @@ class ConvertersSpec {
 
         assertThat(
             convertedRepeating,
-            equalTo("""{"type":"repeating","start":$startSeconds,"every":$durationSeconds,"days":[1,2,3,4,5,6,7]}""")
+            equalTo(
+                """{
+                    "type":"repeating",
+                    "start":$startSeconds,
+                    "every":{"unit":"seconds","amount":$durationSeconds},
+                    "days":[1,2,3,4,5,6,7]
+                    }""".trimMargin().replace("\n", "").replace(" ", "")
+            )
         )
 
         assertThat(converters.stringToSchedule(convertedOnce), equalTo(originalOnce))
@@ -188,7 +281,7 @@ class ConvertersSpec {
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = start,
-                every = Duration.ofMinutes(20),
+                every = Duration.ofMinutes(20).toInterval(),
                 days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
             ),
             contextSwitch = Duration.ofMinutes(5),
@@ -204,7 +297,7 @@ class ConvertersSpec {
                 "name":"test-task",
                 "description":"test-description",
                 "goal":"test-goal",
-                "schedule":{"type":"repeating","start":${start.epochSecond},"every":1200,"days":[4,6,3]},
+                "schedule":{"type":"repeating","start":${start.epochSecond},"every":{"unit":"seconds","amount":1200},"days":[4,6,3]},
                 "context_switch":300,
                 "is_active":true
             }""".replace("\n", "").replace(" ", "")
@@ -223,7 +316,7 @@ class ConvertersSpec {
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20)
+                every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
             isActive = true
@@ -252,7 +345,7 @@ class ConvertersSpec {
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20)
+                every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
             isActive = true
@@ -296,7 +389,7 @@ class ConvertersSpec {
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20)
+                every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
             isActive = true

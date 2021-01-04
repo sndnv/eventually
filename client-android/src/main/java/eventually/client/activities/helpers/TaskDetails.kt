@@ -260,7 +260,9 @@ object TaskDetails {
             ChronoUnit.SECONDS,
             ChronoUnit.MINUTES,
             ChronoUnit.HOURS,
-            ChronoUnit.DAYS
+            ChronoUnit.DAYS,
+            ChronoUnit.MONTHS,
+            ChronoUnit.YEARS
         )
     }
 
@@ -362,7 +364,7 @@ object TaskDetails {
                     val durationType = scheduleRepeatingEveryDurationTypeField.editText?.text.toString().asChronoUnit(context)
                     val durationAmount = scheduleRepeatingEveryDurationAmountField.editText?.text.toString().toLong()
 
-                    val every = Duration.of(durationAmount, durationType)
+                    val every = Task.Schedule.Repeating.Interval.of(durationAmount, durationType)
 
                     val days = if (scheduleRepeatingDays.selectedDays.isEmpty()) {
                         Task.Schedule.Repeating.DefaultDays

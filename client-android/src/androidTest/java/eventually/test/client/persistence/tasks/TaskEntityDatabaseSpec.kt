@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import eventually.client.persistence.tasks.TaskEntity
 import eventually.client.persistence.tasks.TaskEntityDatabase
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.test.client.await
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.equalTo
@@ -43,7 +44,7 @@ class TaskEntityDatabaseSpec {
         goal = "test-goal",
         schedule = Task.Schedule.Repeating(
             start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-            every = Duration.ofMinutes(20)
+            every = Duration.ofMinutes(20).toInterval()
         ),
         contextSwitch = Duration.ofMinutes(5),
         isActive = true

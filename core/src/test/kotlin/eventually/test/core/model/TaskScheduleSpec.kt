@@ -1,6 +1,7 @@
 package eventually.test.core.model
 
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskSchedule
 import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
@@ -24,7 +25,7 @@ class TaskScheduleSpec : WordSpec({
             goal = "test-goal",
             schedule = Task.Schedule.Repeating(
                 start = LocalTime.of(0, 5).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20)
+                every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
             isActive = true
@@ -147,7 +148,9 @@ class TaskScheduleSpec : WordSpec({
                 null -> fail("Expected next task instance but none found")
                 else -> {
                     val every = (task.schedule as Task.Schedule.Repeating).every
-                    next.first.instant shouldBe (instance.instant.plus(every.multipliedBy(3)))
+                    val duration = (every as Task.Schedule.Repeating.Interval.DurationInterval).value
+
+                    next.first.instant shouldBe (instance.instant.plus(duration.multipliedBy(3)))
                     next.second.isAfter(after) shouldBe (true)
                 }
             }
@@ -262,7 +265,7 @@ class TaskScheduleSpec : WordSpec({
             val updatedTask = task.copy(
                 schedule = Task.Schedule.Repeating(
                     start = LocalTime.of(0, 5).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                    every = Duration.ofMinutes(21)
+                    every = Duration.ofMinutes(21).toInterval()
                 )
             )
 

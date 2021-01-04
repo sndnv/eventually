@@ -9,6 +9,7 @@ import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.notifications.NotificationViewModel
 import eventually.client.scheduling.NotificationQueue
 import eventually.core.model.Task
+import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.core.scheduling.SchedulerOps
 import io.mockk.confirmVerified
@@ -258,7 +259,7 @@ class NotificationQueueSpec {
         goal = "test-goal",
         schedule = Task.Schedule.Repeating(
             start = Instant.now().truncatedTo(ChronoUnit.SECONDS),
-            every = Duration.ofMinutes(20)
+            every = Duration.ofMinutes(20).toInterval()
         ),
         contextSwitch = Duration.ofMinutes(5),
         isActive = true
