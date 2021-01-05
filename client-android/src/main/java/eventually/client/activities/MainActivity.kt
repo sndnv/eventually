@@ -128,10 +128,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 }
 
                 if (position == Position.Summary) {
-                    val intent = Intent(this@MainActivity, SchedulerService::class.java)
-                    intent.action = SchedulerService.ActionEvaluate
-
-                    startService(intent)
+                    evaluate()
                 }
 
                 topAppBar.subtitle = getString(
@@ -151,12 +148,20 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         notificationManager.createInstanceNotificationChannels(applicationContext)
 
         startForegroundService(Intent(this, SchedulerService::class.java))
+        evaluate()
     }
 
     override fun onSharedPreferenceChanged(updated: SharedPreferences, key: String?) {
         if (key == Settings.Keys.StatsEnabled) {
             topAppBar.menu.findItem(R.id.stats).isVisible = updated.getStatsEnabled()
         }
+    }
+
+    private fun evaluate() {
+        val intent = Intent(this@MainActivity, SchedulerService::class.java)
+        intent.action = SchedulerService.ActionEvaluate
+
+        startService(intent)
     }
 
     private sealed class Position {
