@@ -12,6 +12,28 @@
         android:layout_height="wrap_content"
         android:layout_row="0"
         android:layout_column="0"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/task_details_field_title_schedule_once_time"
+            android:textAppearance="?attr/textAppearanceCaption" />
+
+        <Button
+            android:id="@+id/time"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="59dp"
+            android:layout_marginEnd="4dp"
+            app:strokeColor="@color/input_stroke" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_row="0"
+        android:layout_column="1"
         android:layout_columnSpan="2"
         android:layout_gravity="fill_horizontal"
         android:orientation="vertical">
@@ -26,28 +48,6 @@
             android:id="@+id/date"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="59dp"
-            android:layout_marginEnd="4dp"
-            app:strokeColor="@color/input_stroke" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_row="0"
-        android:layout_column="2"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/task_details_field_title_schedule_once_time"
-            android:textAppearance="?attr/textAppearanceCaption" />
-
-        <Button
-            android:id="@+id/time"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
             android:layout_height="59dp"
             android:layout_marginStart="4dp"
             app:strokeColor="@color/input_stroke" />
