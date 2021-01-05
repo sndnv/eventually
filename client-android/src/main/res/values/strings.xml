@@ -120,6 +120,11 @@
     <string name="task_details_field_error_schedule_repeating_duration">Duration cannot be empty or 0</string>
     <string name="task_details_field_error_schedule_repeating_duration_padding">\n</string>
 
+    <string name="task_details_field_help_title_context_switch">Context Switch</string>
+    <string name="task_details_field_help_content_context_switch">
+        A context switch is a notification created before a task\'s next alarm is due.
+    </string>
+
     <!-- Task Preview -->
     <string name="task_preview_button_text_dismiss">Dismiss</string>
     <string name="task_preview_button_text_postpone">Postpone</string>
