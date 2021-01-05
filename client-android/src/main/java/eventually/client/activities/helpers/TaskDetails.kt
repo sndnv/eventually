@@ -385,13 +385,13 @@ object TaskDetails {
         fun toUpdatedTask(task: Int): Task = toNewTask().copy(id = task)
 
         val name: String
-            get() = nameField.editText?.text.toString()
+            get() = nameField.editText?.text.toString().trim()
 
         val description: String
-            get() = descriptionField.editText?.text.toString()
+            get() = descriptionField.editText?.text.toString().trim()
 
         val goal: String
-            get() = goalField.editText?.text.toString()
+            get() = goalField.editText?.text.toString().trim()
 
         val contextSwitch: Duration
             get() {
