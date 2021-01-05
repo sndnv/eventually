@@ -11,6 +11,9 @@ interface TaskEntityDao {
     @Query("SELECT * FROM tasks")
     fun get(): LiveData<List<TaskEntity>>
 
+    @Query("SELECT DISTINCT goal FROM tasks")
+    fun goals(): LiveData<List<String>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun put(entity: TaskEntity): Long
 

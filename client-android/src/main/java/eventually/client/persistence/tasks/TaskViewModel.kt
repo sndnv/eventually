@@ -14,6 +14,8 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     val tasks: LiveData<List<Task>> = repo.tasks
 
+    val goals: LiveData<List<String>> = repo.goals
+
     fun put(task: Task): CompletableDeferred<Long> {
         val response = CompletableDeferred<Long>()
         viewModelScope.launch(Dispatchers.IO) {

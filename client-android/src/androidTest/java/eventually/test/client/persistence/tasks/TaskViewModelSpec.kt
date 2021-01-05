@@ -75,6 +75,24 @@ class TaskViewModelSpec {
         }
     }
 
+    @Test
+    fun retrieveUniqueTaskGoals() {
+        withModel { model ->
+            assertThat(model.tasks.await(), equalTo(emptyList()))
+
+            runBlocking {
+                model.put(task.copy(goal = "goal-1"))
+                model.put(task.copy(goal = "goal-2"))
+                model.put(task.copy(goal = "goal-3"))
+                model.put(task.copy(goal = "goal-2"))
+                model.put(task.copy(goal = "goal-3"))
+            }
+
+            assertThat(model.tasks.await().size, equalTo(5))
+            assertThat(model.goals.await().sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
+        }
+    }
+
     @get:Rule
     var instantTaskExecutorRule = InstantTaskExecutorRule()
 

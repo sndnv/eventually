@@ -28,6 +28,7 @@ import eventually.client.settings.Settings.getDateTimeFormat
 import eventually.core.model.Task
 import kotlinx.android.synthetic.main.input_schedule_once.view.date
 import kotlinx.android.synthetic.main.input_schedule_once.view.time
+import kotlinx.android.synthetic.main.layout_task_details.view.goal_text_input
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
@@ -36,10 +37,17 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 
 object TaskDetails {
-    fun AppCompatActivity.initTaskDetails(binding: LayoutTaskDetailsBinding, task: Task?, operation: String): Fields {
+    fun AppCompatActivity.initTaskDetails(
+        binding: LayoutTaskDetailsBinding,
+        task: Task?,
+        goals: List<String>,
+        operation: String
+    ): Fields {
         binding.task = task
         binding.operation = operation
         binding.active = task?.isActive ?: true
+
+        initGoal(binding, task, goals.distinct().sorted())
 
         initContextSwitch(binding, task)
 
@@ -62,6 +70,13 @@ object TaskDetails {
             scheduleType = scheduleType,
             context = this
         )
+    }
+
+    private fun AppCompatActivity.initGoal(binding: LayoutTaskDetailsBinding, task: Task?, goals: List<String>) {
+        val adapter = ArrayAdapter(this, R.layout.list_item_goal, goals)
+        val input = binding.goal.goal_text_input
+        input.setAdapter(adapter)
+        task?.let { input.setText(it.goal, false) }
     }
 
     private fun AppCompatActivity.initContextSwitch(binding: LayoutTaskDetailsBinding, task: Task?) {
@@ -397,7 +412,7 @@ object TaskDetails {
             message = message
         )
 
-    fun TextInputLayout.validate(isValid: (content: String?) -> Boolean, message: () -> String): Boolean {
+    private fun TextInputLayout.validate(isValid: (content: String?) -> Boolean, message: () -> String): Boolean {
         val isInvalid = !isValid(editText?.text?.toString())
 
         isErrorEnabled = isInvalid

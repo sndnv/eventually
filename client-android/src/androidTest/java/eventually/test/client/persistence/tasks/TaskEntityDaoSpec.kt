@@ -61,6 +61,24 @@ class TaskEntityDaoSpec {
         }
     }
 
+    @Test
+    fun retrieveUniqueTaskGoals() {
+        withDao { dao ->
+            assertThat(dao.get().await(), equalTo(emptyList()))
+
+            runBlocking {
+                dao.put(entity.copy(goal = "goal-1"))
+                dao.put(entity.copy(goal = "goal-2"))
+                dao.put(entity.copy(goal = "goal-3"))
+                dao.put(entity.copy(goal = "goal-2"))
+                dao.put(entity.copy(goal = "goal-3"))
+            }
+
+            assertThat(dao.get().await().size, equalTo(5))
+            assertThat(dao.goals().await().sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
+        }
+    }
+
     @get:Rule
     var instantTaskExecutorRule = InstantTaskExecutorRule()
 
