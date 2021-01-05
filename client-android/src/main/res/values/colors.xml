@@ -14,5 +14,4 @@
     <!-- day selector colors -->
     <color name="dayPressed">@color/primary_dark</color>
     <color name="daySelected">@color/primary</color>
-    <color name="dayDeselected">#BEBEBE</color>
 </resources>

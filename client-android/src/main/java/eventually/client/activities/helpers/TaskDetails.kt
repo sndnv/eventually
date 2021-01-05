@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import ca.antonious.materialdaypicker.MaterialDayPicker
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -122,6 +123,19 @@ object TaskDetails {
             (contextSwitchDuration?.second ?: defaultContextSwitchDuration.second).asString(this),
             false
         )
+
+        binding.contextSwitch.durationAmount.endIconMode = TextInputLayout.END_ICON_CUSTOM
+        binding.contextSwitch.durationAmount.endIconDrawable = ContextCompat.getDrawable(this, R.drawable.ic_about)
+
+        binding.contextSwitch.durationAmount.endIconContentDescription =
+            getString(R.string.task_details_field_help_content_context_switch)
+
+        binding.contextSwitch.durationAmount.setEndIconOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.task_details_field_help_title_context_switch)
+                .setMessage(R.string.task_details_field_help_content_context_switch)
+                .show()
+        }
     }
 
     private fun AppCompatActivity.initSchedule(binding: LayoutTaskDetailsBinding, task: Task?): AtomicReference<String> {
