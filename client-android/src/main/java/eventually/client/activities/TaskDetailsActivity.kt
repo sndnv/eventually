@@ -128,6 +128,10 @@ class TaskDetailsActivity : AppCompatActivity() {
                 }
             }
 
+            topAppBar.setNavigationOnClickListener {
+                onBackPressed()
+            }
+
             deleteButton.setOnClickListener {
                 task?.let {
                     MaterialAlertDialogBuilder(this)

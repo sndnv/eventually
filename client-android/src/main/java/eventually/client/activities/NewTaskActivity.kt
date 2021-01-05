@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.material.appbar.MaterialToolbar
 import eventually.client.R
 import eventually.client.activities.helpers.TaskDetails.initTaskDetails
 import eventually.client.activities.helpers.TaskManagement
@@ -22,6 +23,10 @@ class NewTaskActivity : AppCompatActivity() {
             taskViewModel.goals.removeObservers(this)
 
             val binding: ActivityNewTaskBinding = DataBindingUtil.setContentView(this, R.layout.activity_new_task)
+
+            findViewById<MaterialToolbar>(R.id.topAppBar).setNavigationOnClickListener {
+                onBackPressed()
+            }
 
             val fields = initTaskDetails(
                 binding = binding.details,

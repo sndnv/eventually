@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.material.appbar.MaterialToolbar
 import eventually.client.R
 import eventually.client.activities.helpers.Common
 import eventually.client.activities.helpers.Common.renderAsSpannable
@@ -193,6 +194,10 @@ class StatsActivity : AppCompatActivity() {
                     )
             )
         })
+
+        findViewById<MaterialToolbar>(R.id.topAppBar).setNavigationOnClickListener {
+            onBackPressed()
+        }
 
         val button = findViewById<Button>(R.id.force_evaluation)
         button.setOnClickListener {
