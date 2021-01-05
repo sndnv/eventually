@@ -2,6 +2,7 @@ package eventually.client.activities
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.appbar.MaterialToolbar
 import eventually.client.R
 import eventually.client.activities.fragments.SettingsFragment
 
@@ -10,6 +11,10 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_settings)
+
+        findViewById<MaterialToolbar>(R.id.topAppBar).setNavigationOnClickListener {
+            onBackPressed()
+        }
 
         supportFragmentManager
             .beginTransaction()

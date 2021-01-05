@@ -16,6 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:menu="@menu/child_top_bar"
+            app:navigationIcon="@drawable/ic_back"
             app:subtitle="@string/settings_subtitle"
             app:title="@string/app_name" />
 
