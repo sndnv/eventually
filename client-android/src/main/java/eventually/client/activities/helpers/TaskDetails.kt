@@ -6,6 +6,7 @@ import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import ca.antonious.materialdaypicker.MaterialDayPicker
 import com.google.android.material.datepicker.MaterialDatePicker
@@ -53,6 +54,8 @@ object TaskDetails {
 
         val scheduleType = initSchedule(binding, task)
 
+        initSectionExpansion(binding, task)
+
         return Fields(
             nameField = binding.name,
             descriptionField = binding.description,
@@ -70,6 +73,28 @@ object TaskDetails {
             scheduleType = scheduleType,
             context = this
         )
+    }
+
+    private fun AppCompatActivity.initSectionExpansion(binding: LayoutTaskDetailsBinding, task: Task?) {
+        if (task == null) {
+            binding.expandExtraFields.buttonAction.setOnClickListener {
+                if (binding.extraFields.visibility == View.GONE) {
+                    binding.extraFields.visibility = View.VISIBLE
+                    binding.scheduleRepeating.extraDayPicker.visibility = View.VISIBLE
+                    binding.expandExtraFields.buttonAction.icon = ContextCompat.getDrawable(this, R.drawable.ic_collapse)
+                    binding.expandExtraFields.buttonAction.tooltipText = getString(R.string.section_collapse_tooltip)
+                } else {
+                    binding.extraFields.visibility = View.GONE
+                    binding.scheduleRepeating.extraDayPicker.visibility = View.GONE
+                    binding.expandExtraFields.buttonAction.icon = ContextCompat.getDrawable(this, R.drawable.ic_expand)
+                    binding.expandExtraFields.buttonAction.tooltipText = getString(R.string.section_expand_tooltip)
+                }
+            }
+        } else {
+            binding.extraFields.visibility = View.VISIBLE
+            binding.scheduleRepeating.extraDayPicker.visibility = View.VISIBLE
+            binding.expandExtraFields.buttonAction.visibility = View.GONE
+        }
     }
 
     private fun AppCompatActivity.initGoal(binding: LayoutTaskDetailsBinding, task: Task?, goals: List<String>) {

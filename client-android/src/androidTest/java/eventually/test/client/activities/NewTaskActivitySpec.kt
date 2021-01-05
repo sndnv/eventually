@@ -34,9 +34,11 @@ class NewTaskActivitySpec {
             val expectedGoal = "test-goal"
             val expectedDescription = "test-description"
 
-            onView(withId(R.id.name_text_input)).perform(typeText(expectedName))
-            onView(withId(R.id.goal_text_input)).perform(typeText(expectedGoal))
-            onView(withId(R.id.description_text_input)).perform(typeText(expectedDescription))
+            onView(withId(R.id.expand_extra_fields)).perform(scrollTo(), click())
+
+            onView(withId(R.id.name_text_input)).perform(scrollTo(), typeText(expectedName))
+            onView(withId(R.id.goal_text_input)).perform(scrollTo(), typeText(expectedGoal))
+            onView(withId(R.id.description_text_input)).perform(scrollTo(), typeText(expectedDescription))
             onView(withId(R.id.execute_operation)).perform(scrollTo(), click())
 
             val tasks = model.tasks.await()

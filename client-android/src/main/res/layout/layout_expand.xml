@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_action"
+            style="@style/IconOnlyButton"
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"
+            android:layout_margin="0dp"
+            android:tooltipText="@string/section_expand_tooltip"
+            app:icon="@drawable/ic_expand" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+</layout>

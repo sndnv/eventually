@@ -105,62 +105,6 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/task_details_field_title_description"
-                    android:textAppearance="?attr/textAppearanceCaption" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/description"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:importantForAutofill="no"
-                    android:inputType="textMultiLine"
-                    app:hintEnabled="false"
-                    app:placeholderText="@string/task_details_field_title_description_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/description_text_input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@{task.description}" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="10dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/task_details_field_title_context_switch"
-                    android:textAppearance="?attr/textAppearanceCaption" />
-
-                <include
-                    android:id="@+id/context_switch"
-                    layout="@layout/input_duration"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="10dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="10dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
                     android:text="@string/task_details_field_title_schedule"
                     android:textAppearance="?attr/textAppearanceCaption" />
 
@@ -221,6 +165,76 @@
                     android:layout_height="wrap_content"
                     android:visibility="gone" />
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/extra_fields"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <include layout="@layout/layout_divider" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_details_field_title_description"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/description"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:inputType="textMultiLine"
+                        app:hintEnabled="false"
+                        app:placeholderText="@string/task_details_field_title_description_hint">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/description_text_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@{task.description}" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_details_field_title_context_switch"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <include
+                        android:id="@+id/context_switch"
+                        layout="@layout/input_duration"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <include
+                android:id="@+id/expand_extra_fields"
+                layout="@layout/layout_expand" />
 
             <include layout="@layout/layout_divider" />
 
