@@ -187,6 +187,7 @@ class TaskDetailsActivity : AppCompatActivity() {
             initTaskDetails(
                 binding = binding.details,
                 task = task,
+                goals = tasks.map { it.goal },
                 operation = getString(R.string.existing_task_update_action)
             ).let { fields ->
                 task?.let {
