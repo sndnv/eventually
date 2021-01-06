@@ -66,6 +66,9 @@ class TaskListItemAdapter : RecyclerView.Adapter<TaskListItemAdapter.ItemViewHol
             holder.description.text = task.description
         }
 
+        holder.name.isEnabled = task.isActive
+        holder.description.isEnabled = task.isActive
+
         holder.bind(task)
     }
 
