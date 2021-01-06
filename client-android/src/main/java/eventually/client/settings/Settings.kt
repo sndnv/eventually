@@ -1,8 +1,10 @@
 package eventually.client.settings
 
 import android.content.SharedPreferences
-import java.security.Key
+import java.time.DayOfWeek
 import java.time.Duration
+import java.util.Calendar
+import java.util.Locale
 
 object Settings {
     fun SharedPreferences.getSummarySize(): Duration {
@@ -23,6 +25,10 @@ object Settings {
         return parseDateTimeFormat(getString(Keys.DateTimeFormat, Defaults.DateTimeFormat) ?: Defaults.DateTimeFormat)
     }
 
+    fun SharedPreferences.getFirstDayOfWeek(): DayOfWeek {
+        return parseDay(getString(Keys.FirstDayOfWeek, Defaults.FirstDayOfWeek) ?: Defaults.FirstDayOfWeek)
+    }
+
     fun SharedPreferences.getStatsEnabled(): Boolean {
         return getBoolean(Keys.StatsEnabled, Defaults.StatsEnabled)
     }
@@ -38,11 +44,40 @@ object Settings {
             else -> throw IllegalArgumentException("Unexpected format found: [$format]")
         }
 
+    fun parseDay(day: String): DayOfWeek {
+        return when (day) {
+            "system" -> Calendar.getInstance().firstDayOfWeek.toDayOfWeek()
+            else -> DayOfWeek.valueOf(day.toUpperCase(Locale.getDefault()))
+        }
+    }
+
+    fun Int.toDayOfWeek(): DayOfWeek = when (this) {
+        Calendar.MONDAY -> DayOfWeek.MONDAY
+        Calendar.TUESDAY -> DayOfWeek.TUESDAY
+        Calendar.WEDNESDAY -> DayOfWeek.WEDNESDAY
+        Calendar.THURSDAY -> DayOfWeek.THURSDAY
+        Calendar.FRIDAY -> DayOfWeek.FRIDAY
+        Calendar.SATURDAY -> DayOfWeek.SATURDAY
+        Calendar.SUNDAY -> DayOfWeek.SUNDAY
+        else -> throw IllegalArgumentException("Unexpected day of the week found: [$this]")
+    }
+
+    fun DayOfWeek.toCalendarDay(): Int = when (this) {
+        DayOfWeek.MONDAY -> Calendar.MONDAY
+        DayOfWeek.TUESDAY -> Calendar.TUESDAY
+        DayOfWeek.WEDNESDAY -> Calendar.WEDNESDAY
+        DayOfWeek.THURSDAY -> Calendar.THURSDAY
+        DayOfWeek.FRIDAY -> Calendar.FRIDAY
+        DayOfWeek.SATURDAY -> Calendar.SATURDAY
+        DayOfWeek.SUNDAY -> Calendar.SUNDAY
+    }
+
     object Keys {
         const val SummarySize: String = "summary_size"
         const val SummaryMaxTasks: String = "summary_max_tasks"
         const val PostponeLength: String = "postpone_length"
         const val DateTimeFormat: String = "date_time_format"
+        const val FirstDayOfWeek: String = "first_day_of_week"
         const val StatsEnabled: String = "stats_enabled"
         const val ShowAllInstances: String = "show_all_instances"
     }
@@ -52,6 +87,7 @@ object Settings {
         const val SummaryMaxTasks: String = "7"
         const val PostponeLength: String = "10" // minutes
         const val DateTimeFormat: String = "system"
+        const val FirstDayOfWeek: String = "system"
         const val StatsEnabled: Boolean = false
         const val ShowAllInstances: Boolean = false
     }

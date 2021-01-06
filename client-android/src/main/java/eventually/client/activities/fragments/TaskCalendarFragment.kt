@@ -13,14 +13,17 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
+import androidx.preference.PreferenceManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eventually.client.R
 import eventually.client.activities.TaskDetailsActivity
 import eventually.client.activities.helpers.Common.StyledString
 import eventually.client.activities.helpers.Common.renderAsSpannable
-import eventually.client.scheduling.SchedulerService
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsDate
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
+import eventually.client.scheduling.SchedulerService
+import eventually.client.settings.Settings.getFirstDayOfWeek
+import eventually.client.settings.Settings.toCalendarDay
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
@@ -50,8 +53,10 @@ class TaskCalendarFragment : Fragment() {
         inflater.inflate(R.layout.fragment_task_calendar, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+
         val calendar = view.findViewById<CalendarView>(R.id.tasks_calendar)
-        calendar.setupCalendar()
+        calendar.setupCalendar(firstDayOfWeek = preferences.getFirstDayOfWeek().toCalendarDay())
 
         calendar.onDateClickListener = { date ->
             val items = calendar.getDateIndicators(date)

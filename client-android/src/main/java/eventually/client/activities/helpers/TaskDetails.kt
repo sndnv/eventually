@@ -27,6 +27,7 @@ import eventually.client.activities.helpers.DateTimeExtensions.parseAsLocalTime
 import eventually.client.databinding.LayoutTaskDetailsBinding
 import eventually.client.settings.Settings
 import eventually.client.settings.Settings.getDateTimeFormat
+import eventually.client.settings.Settings.getFirstDayOfWeek
 import eventually.core.model.Task
 import kotlinx.android.synthetic.main.input_schedule_once.view.date
 import kotlinx.android.synthetic.main.input_schedule_once.view.time
@@ -300,6 +301,7 @@ object TaskDetails {
 
         val days = schedule?.days ?: Task.Schedule.Repeating.DefaultDays
         val daysPicker = scheduleRepeating.findViewById<MaterialDayPicker>(R.id.days)
+        daysPicker.firstDayOfWeek = MaterialDayPicker.Weekday.valueOf(preferences.getFirstDayOfWeek().name)
         daysPicker.setSelectedDays(days.map { MaterialDayPicker.Weekday.valueOf(it.name) })
     }
 

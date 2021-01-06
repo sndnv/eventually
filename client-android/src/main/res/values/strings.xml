@@ -171,10 +171,12 @@
         <item quantity="one">Postpone a task by %1$s minute</item>
         <item quantity="other">Postpone a task by %1$s minutes</item>
     </plurals>
-    <string name="settings_date_time_format_title">Date/Time Format</string>
+    <string name="settings_date_time_format_title">Date/Time format</string>
     <string name="settings_date_time_format_hint">Show dates as %1$s and time as %2$s</string>
-    <string name="settings_stats_enabled_title">Show Statistics Menu Option</string>
-    <string name="settings_show_all_instances_title">Show All Task Instances</string>
+    <string name="settings_first_day_of_week_title">Start week on</string>
+    <string name="settings_first_day_of_week_hint">%1$s</string>
+    <string name="settings_stats_enabled_title">Show statistics menu option</string>
+    <string name="settings_show_all_instances_title">Show all task instances</string>
 
     <!-- Stats -->
     <string name="stats_subtitle">Statistics</string>

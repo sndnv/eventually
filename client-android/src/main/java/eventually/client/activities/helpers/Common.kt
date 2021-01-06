@@ -78,8 +78,12 @@ object Common {
         else -> throw IllegalArgumentException("Unexpected ChronoUnit string provided: [$this]")
     }
 
-    fun Set<DayOfWeek>.asString(): String =
-        sorted().joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
+    fun Set<DayOfWeek>.asString(withFirstDayOfWeek: DayOfWeek): String {
+        val partitioned = sorted().partition { it >= withFirstDayOfWeek }
+        return (partitioned.first + partitioned.second).joinToString(", ") {
+            it.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        }
+    }
 
     data class StyledString(val placeholder: String, val content: String, val style: CharacterStyle)
 

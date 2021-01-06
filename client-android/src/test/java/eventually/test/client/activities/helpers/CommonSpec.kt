@@ -137,9 +137,17 @@ class CommonSpec {
         val someDays = setOf(DayOfWeek.TUESDAY, DayOfWeek.SUNDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY)
         val allDays = someDays + setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY)
 
-        assertThat(someDays.asString(), equalTo("Tue, Fri, Sat, Sun"))
-        assertThat(allDays.asString(), equalTo("Mon, Tue, Wed, Thu, Fri, Sat, Sun"))
-        assertThat(emptySet<DayOfWeek>().asString(), equalTo(""))
+        assertThat(someDays.asString(DayOfWeek.MONDAY), equalTo("Tue, Fri, Sat, Sun"))
+        assertThat(allDays.asString(DayOfWeek.MONDAY), equalTo("Mon, Tue, Wed, Thu, Fri, Sat, Sun"))
+        assertThat(emptySet<DayOfWeek>().asString(DayOfWeek.MONDAY), equalTo(""))
+
+        assertThat(someDays.asString(DayOfWeek.SATURDAY), equalTo("Sat, Sun, Tue, Fri"))
+        assertThat(allDays.asString(DayOfWeek.SATURDAY), equalTo("Sat, Sun, Mon, Tue, Wed, Thu, Fri"))
+        assertThat(emptySet<DayOfWeek>().asString(DayOfWeek.SATURDAY), equalTo(""))
+
+        assertThat(someDays.asString(DayOfWeek.SUNDAY), equalTo("Sun, Tue, Fri, Sat"))
+        assertThat(allDays.asString(DayOfWeek.SUNDAY), equalTo("Sun, Mon, Tue, Wed, Thu, Fri, Sat"))
+        assertThat(emptySet<DayOfWeek>().asString(DayOfWeek.SUNDAY), equalTo(""))
     }
 
     @Test

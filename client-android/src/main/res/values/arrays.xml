@@ -42,4 +42,16 @@
         <item>system</item>
         <item>iso</item>
     </string-array>
+    <string-array name="settings_first_day_of_week_entries">
+        <item>System Default</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+        <item>Monday</item>
+    </string-array>
+    <string-array name="settings_first_day_of_week_values">
+        <item>system</item>
+        <item>saturday</item>
+        <item>sunday</item>
+        <item>monday</item>
+    </string-array>
 </resources>

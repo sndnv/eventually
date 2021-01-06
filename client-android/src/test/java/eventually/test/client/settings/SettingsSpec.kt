@@ -3,20 +3,27 @@ package eventually.test.client.settings
 import android.content.SharedPreferences
 import eventually.client.settings.Settings
 import eventually.client.settings.Settings.getDateTimeFormat
+import eventually.client.settings.Settings.getFirstDayOfWeek
 import eventually.client.settings.Settings.getPostponeLength
 import eventually.client.settings.Settings.getShowAllInstances
 import eventually.client.settings.Settings.getStatsEnabled
 import eventually.client.settings.Settings.getSummaryMaxTasks
 import eventually.client.settings.Settings.getSummarySize
+import eventually.client.settings.Settings.toCalendarDay
+import eventually.client.settings.Settings.toDayOfWeek
 import io.mockk.every
 import io.mockk.mockk
+import org.hamcrest.CoreMatchers.anyOf
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
+import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.DayOfWeek
 import java.time.Duration
+import java.util.Calendar
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Config.OLDEST_SDK])
@@ -31,6 +38,51 @@ class SettingsSpec {
         } catch (e: IllegalArgumentException) {
             assertThat(e.message, equalTo("Unexpected format found: [other]"))
         }
+    }
+
+    @Test
+    fun supportParsingDays() {
+        assertThat(
+            Settings.parseDay(day = "system"),
+            anyOf(equalTo(DayOfWeek.SATURDAY), equalTo(DayOfWeek.SUNDAY), equalTo(DayOfWeek.MONDAY))
+        )
+
+        assertThat(Settings.parseDay(day = "monday"), equalTo(DayOfWeek.MONDAY))
+        assertThat(Settings.parseDay(day = "tuesday"), equalTo(DayOfWeek.TUESDAY))
+        assertThat(Settings.parseDay(day = "wednesday"), equalTo(DayOfWeek.WEDNESDAY))
+        assertThat(Settings.parseDay(day = "thursday"), equalTo(DayOfWeek.THURSDAY))
+        assertThat(Settings.parseDay(day = "friday"), equalTo(DayOfWeek.FRIDAY))
+        assertThat(Settings.parseDay(day = "saturday"), equalTo(DayOfWeek.SATURDAY))
+        assertThat(Settings.parseDay(day = "sunday"), equalTo(DayOfWeek.SUNDAY))
+    }
+
+    @Test
+    fun supportConvertingCalendarDaysToDayOfWeek() {
+        assertThat(Calendar.MONDAY.toDayOfWeek(), equalTo(DayOfWeek.MONDAY))
+        assertThat(Calendar.TUESDAY.toDayOfWeek(), equalTo(DayOfWeek.TUESDAY))
+        assertThat(Calendar.WEDNESDAY.toDayOfWeek(), equalTo(DayOfWeek.WEDNESDAY))
+        assertThat(Calendar.THURSDAY.toDayOfWeek(), equalTo(DayOfWeek.THURSDAY))
+        assertThat(Calendar.FRIDAY.toDayOfWeek(), equalTo(DayOfWeek.FRIDAY))
+        assertThat(Calendar.SATURDAY.toDayOfWeek(), equalTo(DayOfWeek.SATURDAY))
+        assertThat(Calendar.SUNDAY.toDayOfWeek(), equalTo(DayOfWeek.SUNDAY))
+
+        try {
+            42.toDayOfWeek()
+            Assert.fail("Unexpected result received")
+        } catch (e: IllegalArgumentException) {
+            assertThat(e.message, equalTo("Unexpected day of the week found: [42]"))
+        }
+    }
+
+    @Test
+    fun supportConvertingDayOfWeekToCalendarDays() {
+        assertThat(DayOfWeek.MONDAY.toCalendarDay(), equalTo(Calendar.MONDAY))
+        assertThat(DayOfWeek.TUESDAY.toCalendarDay(), equalTo(Calendar.TUESDAY))
+        assertThat(DayOfWeek.WEDNESDAY.toCalendarDay(), equalTo(Calendar.WEDNESDAY))
+        assertThat(DayOfWeek.THURSDAY.toCalendarDay(), equalTo(Calendar.THURSDAY))
+        assertThat(DayOfWeek.FRIDAY.toCalendarDay(), equalTo(Calendar.FRIDAY))
+        assertThat(DayOfWeek.SATURDAY.toCalendarDay(), equalTo(Calendar.SATURDAY))
+        assertThat(DayOfWeek.SUNDAY.toCalendarDay(), equalTo(Calendar.SUNDAY))
     }
 
     @Test
@@ -103,6 +155,24 @@ class SettingsSpec {
 
         val expectedFormat = "iso"
         assertThat(preferences.getDateTimeFormat(), equalTo((Settings.parseDateTimeFormat(expectedFormat))))
+    }
+
+    @Test
+    fun supportRetrievingDefaultFirstDayOfWeek() {
+        val preferences = mockk<SharedPreferences>()
+        every { preferences.getString(Settings.Keys.FirstDayOfWeek, Settings.Defaults.FirstDayOfWeek) } returns null
+
+        val expectedDay = Settings.Defaults.FirstDayOfWeek
+        assertThat(preferences.getFirstDayOfWeek(), equalTo((Settings.parseDay(expectedDay))))
+    }
+
+    @Test
+    fun supportRetrievingUserDefinedFirstDayOfWeek() {
+        val preferences = mockk<SharedPreferences>()
+        every { preferences.getString(Settings.Keys.FirstDayOfWeek, Settings.Defaults.FirstDayOfWeek) } returns "monday"
+
+        val expectedDay = "monday"
+        assertThat(preferences.getFirstDayOfWeek(), equalTo((Settings.parseDay(expectedDay))))
     }
 
     @Test
