@@ -16,11 +16,15 @@ import eventually.client.activities.helpers.Common.toFields
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsDate
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
 import eventually.client.settings.Settings
+import eventually.client.settings.Settings.getFirstDayOfWeek
 import eventually.client.settings.Settings.getPostponeLength
 import eventually.client.settings.Settings.getSummaryMaxTasks
 import eventually.client.settings.Settings.getSummarySize
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
+import java.time.format.TextStyle
+import java.util.Locale
 
 class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -85,6 +89,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
             )
             true
         }
+
+        val firstDayOfWeek = findPreference<DropDownPreference>(Settings.Keys.FirstDayOfWeek)
+        val firstDayOfWeekValue = preferenceManager.sharedPreferences.getFirstDayOfWeek()
+        firstDayOfWeek?.summary = renderFirstDayOfWeek(firstDayOfWeekValue)
+        firstDayOfWeek?.setOnPreferenceChangeListener { _, newValue ->
+            firstDayOfWeek.summary = renderFirstDayOfWeek(Settings.parseDay(newValue.toString()))
+            true
+        }
     }
 
     private fun renderSummarySize(value: Duration): SpannableString {
@@ -141,6 +153,16 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 StyledString(
                     placeholder = "%2\$s",
                     content = time,
+                    style = StyleSpan(Typeface.BOLD)
+                )
+            )
+
+    private fun renderFirstDayOfWeek(day: DayOfWeek): SpannableString =
+        getString(R.string.settings_first_day_of_week_hint)
+            .renderAsSpannable(
+                StyledString(
+                    placeholder = "%1\$s",
+                    content = day.getDisplayName(TextStyle.FULL, Locale.getDefault()),
                     style = StyleSpan(Typeface.BOLD)
                 )
             )

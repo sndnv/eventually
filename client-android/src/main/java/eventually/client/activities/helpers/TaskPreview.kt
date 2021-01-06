@@ -26,6 +26,7 @@ import eventually.client.activities.helpers.DateTimeExtensions.formatAsDate
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsFullDateTime
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
 import eventually.client.databinding.LayoutTaskPreviewBinding
+import eventually.client.settings.Settings.getFirstDayOfWeek
 import eventually.client.settings.Settings.getShowAllInstances
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
@@ -42,6 +43,8 @@ object TaskPreview {
         schedule: TaskSchedule?,
         handlers: Handlers?
     ) {
+        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+
         binding.task = task
 
         val contextSwitch = task?.contextSwitch?.toFields()
@@ -74,7 +77,7 @@ object TaskPreview {
                 val date = taskSchedule.start.formatAsDate(this)
                 val time = taskSchedule.start.formatAsTime(this)
                 val every = taskSchedule.every.toFields()
-                val days = taskSchedule.days.asString()
+                val days = taskSchedule.days.asString(withFirstDayOfWeek = preferences.getFirstDayOfWeek())
 
                 getString(
                     if (taskSchedule.days.size == 7) {
@@ -130,7 +133,6 @@ object TaskPreview {
             taskSchedule
         }
 
-        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
         val showAllInstances = preferences.getShowAllInstances()
 
         val instances = schedule?.instances?.values?.toList() ?: emptyList()
