@@ -70,6 +70,19 @@ data class TaskSchedule(
         )
     }
 
+    fun undoDismiss(instant: Instant): TaskSchedule {
+        require(dismissed.contains(instant)) {
+            "Cannot undo dismissal with [$instant] for task [${task.id} / ${task.name}]; instant does not exist"
+        }
+
+        val instance = TaskInstance(instant)
+
+        return copy(
+            instances = instances + (instance.id to instance),
+            dismissed = dismissed - instant
+        )
+    }
+
     fun postpone(instance: UUID, by: Duration): TaskSchedule {
         require(instances.contains(instance)) {
             "Cannot postpone instance [$instance] for task [${task.id} / ${task.name}]; instance does not exist"

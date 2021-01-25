@@ -278,6 +278,57 @@ class SchedulerOpsSpec : WordSpec({
             result.affectedSchedules shouldBe (emptyList())
         }
 
+        "undo dismissal of tasks" {
+            val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
+
+            val instances = schedules.values.first().instances
+            instances.size shouldBe (1)
+
+            val instance = instances.values.first()
+
+            val dismissResult = SchedulerOps.dismiss(schedules, SchedulerOps.Message.Dismiss(task.id, instance.id))
+
+            dismissResult.schedules.map { it.value.task } shouldBe (listOf(task))
+            dismissResult.notifications shouldBe (listOf(
+                SchedulerOps.Notification.DeleteInstanceNotifications(
+                    task.id,
+                    instance.id
+                )
+            ))
+            dismissResult.summary shouldBe (null)
+            dismissResult.affectedSchedules shouldBe (listOf(task.id))
+
+            dismissResult.schedules.values.first().instances shouldBe (emptyMap())
+            dismissResult.schedules.values.first().dismissed shouldBe (listOf(instance.instant))
+
+            val undoDismissResult = SchedulerOps.undoDismiss(
+                dismissResult.schedules,
+                SchedulerOps.Message.UndoDismiss(task.id, instant = instance.instant)
+            )
+            undoDismissResult.schedules.map { it.value.task } shouldBe (listOf(task))
+            undoDismissResult.notifications shouldBe (emptyList())
+            undoDismissResult.summary shouldBe (null)
+            undoDismissResult.affectedSchedules shouldBe (listOf(task.id))
+
+            undoDismissResult.schedules.values.first().instances.size shouldBe (1)
+            undoDismissResult.schedules.values.first().dismissed shouldBe (emptyList())
+
+            val newInstance = undoDismissResult.schedules.values.first().instances.values.first()
+            newInstance.id shouldNotBe (instance.id)
+            newInstance.instant shouldBe (instance.instant)
+        }
+
+        "do nothing when undoing dismissal of missing tasks" {
+            val schedules = emptyMap<Int, TaskSchedule>()
+
+            val result = SchedulerOps.undoDismiss(schedules, SchedulerOps.Message.UndoDismiss(task = 0, instant = Instant.now()))
+
+            result.schedules shouldBe (emptyMap())
+            result.notifications shouldBe (emptyList())
+            result.summary shouldBe (null)
+            result.affectedSchedules shouldBe (emptyList())
+        }
+
         "postpone existing tasks" {
             val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
 

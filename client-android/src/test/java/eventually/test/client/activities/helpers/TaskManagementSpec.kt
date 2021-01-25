@@ -6,6 +6,7 @@ import eventually.client.activities.helpers.TaskManagement
 import eventually.client.scheduling.SchedulerService
 import eventually.client.serialization.Extras.requireDuration
 import eventually.client.serialization.Extras.requireInstanceId
+import eventually.client.serialization.Extras.requireInstant
 import eventually.client.serialization.Extras.requireTask
 import eventually.client.serialization.Extras.requireTaskId
 import eventually.core.model.Task
@@ -88,6 +89,26 @@ class TaskManagementSpec {
     }
 
     @Test
+    fun undoTaskInstanceDismissal() {
+        val intent = slot<Intent>()
+
+        val context = mockk<Context>()
+        every { context.packageName } returns "test"
+        every { context.startService(capture(intent)) } returns null
+
+        TaskManagement.undoDismissTaskInstance(context, task.id, instance.instant)
+
+        verify(exactly = 1) { context.packageName }
+        verify(exactly = 1) { context.startService(any()) }
+
+        confirmVerified(context)
+
+        assertThat(intent.captured.action, equalTo(SchedulerService.ActionUndoDismiss))
+        assertThat(intent.captured.requireTaskId(SchedulerService.ActionUndoDismissExtraTask), equalTo(task.id))
+        assertThat(intent.captured.requireInstant(SchedulerService.ActionUndoDismissExtraInstant), equalTo(instance.instant))
+    }
+
+    @Test
     fun postponeTaskInstances() {
         val intent = slot<Intent>()
 
@@ -124,6 +145,6 @@ class TaskManagementSpec {
     )
 
     private val instance = TaskInstance(
-        instant = Instant.now()
+        instant = Instant.now().truncatedTo(ChronoUnit.MILLIS)
     )
 }

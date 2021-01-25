@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -34,6 +35,9 @@ import eventually.core.model.TaskSchedule
 import kotlinx.android.synthetic.main.list_item_task_instance.view.button_dismiss
 import kotlinx.android.synthetic.main.list_item_task_instance.view.button_postpone
 import kotlinx.android.synthetic.main.list_item_task_instance.view.task_instance_content
+import kotlinx.android.synthetic.main.list_item_task_instance_dismissed.view.button_undo
+import kotlinx.android.synthetic.main.list_item_task_instance_dismissed.view.task_instance_dismissed_content
+import java.time.Instant
 import java.util.UUID
 
 object TaskPreview {
@@ -135,7 +139,7 @@ object TaskPreview {
 
         val showAllInstances = preferences.getShowAllInstances()
 
-        val instances = schedule?.instances?.values?.toList() ?: emptyList()
+        val instances = schedule?.instances?.values?.toList()?.sortedBy { it.instant } ?: emptyList()
         val instancesView = findViewById<ListView>(R.id.preview_instances)
         instancesView.adapter = TaskInstanceListItemAdapter(
             context = this,
@@ -165,11 +169,30 @@ object TaskPreview {
                 )
             tooManyInstancesView.visibility = View.VISIBLE
         }
+
+        val dismissedInstancesContainer = findViewById<LinearLayout>(R.id.preview_instances_dismissed_container)
+        if (showAllInstances) {
+            val dismissed = schedule?.dismissed?.sorted() ?: emptyList()
+
+            val dismissedView = findViewById<ListView>(R.id.preview_instances_dismissed)
+            dismissedView.adapter = TaskDismissedInstanceListItemAdapter(
+                context = this,
+                resource = R.layout.list_item_task_instance_dismissed,
+                instances = dismissed,
+                handlers = handlers
+            )
+            dismissedView.emptyView = findViewById<TextView>(R.id.preview_instances_dismissed_empty)
+
+            dismissedInstancesContainer.visibility = View.VISIBLE
+        } else {
+            dismissedInstancesContainer.visibility = View.GONE
+        }
     }
 
     data class Handlers(
-        val dismiss: (instance: UUID) -> View.OnClickListener,
-        val postpone: (instance: UUID) -> View.OnClickListener
+        val dismiss: (instance: UUID, instant: Instant) -> View.OnClickListener,
+        val postpone: (instance: UUID) -> View.OnClickListener,
+        val undo: (instant: Instant) -> View.OnClickListener
     )
 
     class TaskInstanceListItemAdapter(
@@ -199,7 +222,7 @@ object TaskPreview {
             layout.task_instance_content.text = content
 
             layout.button_dismiss.setOnClickListener(handlers?.let {
-                it.dismiss(instance.id)
+                it.dismiss(instance.id, instance.instant)
             })
 
             layout.button_postpone.setOnClickListener(handlers?.let {
@@ -207,6 +230,30 @@ object TaskPreview {
             })
 
             layout.button_postpone.isEnabled = taskActive
+
+            return layout
+        }
+    }
+
+    class TaskDismissedInstanceListItemAdapter(
+        context: Context,
+        private val resource: Int,
+        private val instances: List<Instant>,
+        private val handlers: Handlers?
+    ) :
+        ArrayAdapter<Instant>(context, resource, instances) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val layout = (convertView ?: LayoutInflater.from(parent.context).inflate(resource, parent, false)) as ConstraintLayout
+            val instance = instances[position]
+
+            layout.task_instance_dismissed_content.text = context.getString(
+                R.string.task_preview_field_content_instance_dismissed,
+                instance.formatAsFullDateTime(context)
+            )
+
+            layout.button_undo.setOnClickListener(handlers?.let {
+                it.undo(instance)
+            })
 
             return layout
         }

@@ -3,26 +3,30 @@ package eventually.test.client.serialization
 import android.content.Intent
 import eventually.client.serialization.Extras.putDuration
 import eventually.client.serialization.Extras.putInstanceId
+import eventually.client.serialization.Extras.putInstant
 import eventually.client.serialization.Extras.putTask
 import eventually.client.serialization.Extras.putTaskId
 import eventually.client.serialization.Extras.requireDuration
 import eventually.client.serialization.Extras.requireInstanceId
+import eventually.client.serialization.Extras.requireInstant
 import eventually.client.serialization.Extras.requireTask
 import eventually.client.serialization.Extras.requireTaskId
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
+import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.CoreMatchers.not
+import org.hamcrest.MatcherAssert.assertThat
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.CoreMatchers.not
-import org.hamcrest.MatcherAssert.assertThat
-import org.junit.Assert.fail
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
@@ -138,6 +142,28 @@ class ExtrasSpec {
             fail("Unexpected result received")
         } catch (e: IllegalArgumentException) {
             assertThat(e.message, equalTo("Expected duration [$extra] but none was provided"))
+        }
+    }
+
+    @Test
+    fun putAndRetrieveInstants() {
+        val instant = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val intent = createIntent().putInstant(extra, instant)
+        assertThat(intent.getLongExtra(extra, 0), equalTo(instant.toEpochMilli()))
+
+        val extractedInstant = intent.requireInstant(extra)
+        assertThat(extractedInstant, equalTo(instant))
+    }
+
+    @Test
+    fun failToRetrieveInstantOnMissingExtra() {
+        val intent = createIntent()
+
+        try {
+            intent.requireInstant(extra)
+            fail("Unexpected result received")
+        } catch (e: IllegalArgumentException) {
+            assertThat(e.message, equalTo("Expected instant [$extra] but none was provided"))
         }
     }
 

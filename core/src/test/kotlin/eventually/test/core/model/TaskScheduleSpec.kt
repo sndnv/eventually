@@ -8,6 +8,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.WordSpec
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.startWith
 import java.time.Duration
 import java.time.Instant
@@ -176,6 +177,37 @@ class TaskScheduleSpec : WordSpec({
             }
 
             e.message should startWith("Cannot dismiss instance")
+        }
+
+        "support undoing dismissal of task instances" {
+            val after = after()
+            val within = Duration.ofMinutes(5)
+
+            val schedule = TaskSchedule(task).update(after = after, within = within)
+            schedule.instances.size shouldBe (1)
+
+            val instance = schedule.instances.values.first()
+            val updatedSchedule = schedule.dismiss(instance.id)
+            updatedSchedule.instances shouldBe (emptyMap())
+            updatedSchedule.dismissed shouldBe (listOf(instance.instant))
+
+            val latestSchedule = updatedSchedule.undoDismiss(instance.instant)
+            latestSchedule.instances.size shouldBe (1)
+            latestSchedule.dismissed shouldBe (emptyList())
+
+            val newInstance = latestSchedule.instances.values.first()
+            newInstance.id shouldNotBe (instance.id)
+            newInstance.instant shouldBe (instance.instant)
+        }
+
+        "fail to undo dismissal of missing task instants" {
+            val schedule = TaskSchedule(task)
+
+            val e = shouldThrow<IllegalArgumentException> {
+                schedule.undoDismiss(instant = Instant.now())
+            }
+
+            e.message should startWith("Cannot undo dismissal")
         }
 
         "support postponing task instances" {
