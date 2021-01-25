@@ -28,6 +28,7 @@ import eventually.client.persistence.tasks.TaskRepository
 import eventually.client.persistence.tasks.TaskViewModel
 import eventually.client.serialization.Extras.requireDuration
 import eventually.client.serialization.Extras.requireInstanceId
+import eventually.client.serialization.Extras.requireInstant
 import eventually.client.serialization.Extras.requireTask
 import eventually.client.serialization.Extras.requireTaskId
 import eventually.client.settings.Settings
@@ -233,6 +234,10 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         const val ActionDismissExtraTask: String = "eventually.client.scheduling.SchedulerService.Dismiss.extra_task"
         const val ActionDismissExtraInstance: String = "eventually.client.scheduling.SchedulerService.Dismiss.extra_instance"
 
+        const val ActionUndoDismiss: String = "eventually.client.scheduling.SchedulerService.UndoDismiss"
+        const val ActionUndoDismissExtraTask: String = "eventually.client.scheduling.SchedulerService.UndoDismiss.extra_task"
+        const val ActionUndoDismissExtraInstant: String = "eventually.client.scheduling.SchedulerService.UndoDismiss.extra_instant"
+
         const val ActionPostpone: String = "eventually.client.scheduling.SchedulerService.Postpone"
         const val ActionPostponeExtraTask: String = "eventually.client.scheduling.SchedulerService.Postpone.extra_task"
         const val ActionPostponeExtraInstance: String = "eventually.client.scheduling.SchedulerService.Postpone.extra_instance"
@@ -264,6 +269,14 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                     val task = requireTaskId(ActionDismissExtraTask)
                     val instance = requireInstanceId(ActionDismissExtraInstance)
                     SchedulerOps.Message.Dismiss(task, instance)
+                }
+
+                ActionUndoDismiss -> {
+                    requireConfig()
+
+                    val task = requireTaskId(ActionUndoDismissExtraTask)
+                    val instant = requireInstant(ActionUndoDismissExtraInstant)
+                    SchedulerOps.Message.UndoDismiss(task, instant)
                 }
 
                 ActionPostpone -> {
@@ -302,6 +315,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                 }
 
                 is SchedulerOps.Message.Dismiss -> SchedulerOps.dismiss(schedules, message)
+                is SchedulerOps.Message.UndoDismiss -> SchedulerOps.undoDismiss(schedules, message)
                 is SchedulerOps.Message.Postpone -> SchedulerOps.postpone(schedules, message)
                 is SchedulerOps.Message.Evaluate -> null
                 is SchedulerOps.Message.Init -> SchedulerOps.init(message)

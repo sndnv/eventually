@@ -15,6 +15,7 @@ object SchedulerOps {
         data class Put(val task: Task) : Message()
         data class Delete(val task: Int) : Message()
         data class Dismiss(val task: Int, val instance: UUID) : Message()
+        data class UndoDismiss(val task: Int, val instant: Instant) : Message()
         data class Postpone(val task: Int, val instance: UUID, val by: Duration) : Message()
         data class Evaluate(val config: TaskSummaryConfig) : Message()
     }
@@ -116,6 +117,27 @@ object SchedulerOps {
             SchedulerResult(
                 schedules = updated,
                 notifications = notifications,
+                summary = null,
+                affectedSchedules = listOf(msg.task)
+            )
+        } else {
+            SchedulerResult(
+                schedules = schedules,
+                notifications = emptyList(),
+                summary = null,
+                affectedSchedules = emptyList()
+            )
+        }
+    }
+
+    fun undoDismiss(schedules: Map<Int, TaskSchedule>, msg: Message.UndoDismiss): SchedulerResult {
+        val schedule = schedules[msg.task]
+        return if (schedule != null) {
+            val updated = schedules + (msg.task to schedule.undoDismiss(msg.instant))
+
+            SchedulerResult(
+                schedules = updated,
+                notifications = emptyList(),
                 summary = null,
                 affectedSchedules = listOf(msg.task)
             )

@@ -153,6 +153,33 @@
                         android:text="@string/task_preview_instances_empty_text"
                         android:textAppearance="?attr/textAppearanceBody2" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/preview_instances_dismissed_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="16dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/task_preview_field_title_instances_dismissed"
+                        android:textAppearance="?attr/textAppearanceCaption" />
+
+                    <eventually.client.activities.views.ExpandingListView
+                        android:id="@+id/preview_instances_dismissed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                    <TextView
+                        android:id="@+id/preview_instances_dismissed_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="@string/task_preview_instances_dismissed_empty_text"
+                        android:textAppearance="?attr/textAppearanceBody2" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </merge>

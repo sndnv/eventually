@@ -5,6 +5,7 @@ import eventually.client.persistence.Converters.Companion.toJson
 import eventually.client.persistence.Converters.Companion.toTask
 import eventually.core.model.Task
 import java.time.Duration
+import java.time.Instant
 import java.util.UUID
 
 object Extras {
@@ -57,6 +58,21 @@ object Extras {
         return Duration.ofMillis(duration)
     }
 
+    fun Intent.putInstant(extra: String, instant: Instant): Intent {
+        val instantInMillis = instant.toEpochMilli()
+        require(instantInMillis != MissingInstant) { "Invalid instant [$extra] provided" }
+
+        return putExtra(extra, instantInMillis)
+    }
+
+    fun Intent.requireInstant(extra: String): Instant {
+        val instant = getLongExtra(extra, MissingInstant)
+        require(instant != MissingInstant) { "Expected instant [$extra] but none was provided" }
+
+        return Instant.ofEpochMilli(instant)
+    }
+
     private const val MissingTaskId: Int = Int.MIN_VALUE
     private const val MissingDuration: Long = Long.MIN_VALUE
+    private const val MissingInstant: Long = Long.MIN_VALUE
 }

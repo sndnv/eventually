@@ -13,6 +13,7 @@ import eventually.client.scheduling.SchedulerService.Companion.handle
 import eventually.client.scheduling.SchedulerService.Companion.toSchedulerMessage
 import eventually.client.serialization.Extras.putDuration
 import eventually.client.serialization.Extras.putInstanceId
+import eventually.client.serialization.Extras.putInstant
 import eventually.client.serialization.Extras.putTask
 import eventually.client.serialization.Extras.putTaskId
 import eventually.core.model.Task
@@ -72,6 +73,16 @@ class SchedulerServiceSpec {
             }.toSchedulerMessage(::requireConfig),
             equalTo(
                 SchedulerOps.Message.Dismiss(task.id, instance.id)
+            )
+        )
+
+        assertThat(
+            context.createIntent(SchedulerService.ActionUndoDismiss) {
+                it.putTaskId(SchedulerService.ActionUndoDismissExtraTask, task.id)
+                it.putInstant(SchedulerService.ActionUndoDismissExtraInstant, instance.instant)
+            }.toSchedulerMessage(::requireConfig),
+            equalTo(
+                SchedulerOps.Message.UndoDismiss(task.id, instance.instant)
             )
         )
 
@@ -152,6 +163,26 @@ class SchedulerServiceSpec {
                         notifications = listOf(
                             SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id)
                         ),
+                        summary = null,
+                        affectedSchedules = listOf(task.id)
+                    )
+                )
+            )
+
+            val undoResult = Message().apply { obj = SchedulerOps.Message.UndoDismiss(task.id, instance.instant) }
+                .handle(mapOf(Pair(task.id, TaskSchedule(task, emptyMap(), listOf(instance.instant)))), model)
+            val newInstance = undoResult?.schedules?.values?.first()?.instances?.values?.first()!!
+            assertThat(
+                undoResult,
+                equalTo(
+                    SchedulerOps.SchedulerResult(
+                        schedules = mapOf(
+                            Pair(
+                                task.id,
+                                TaskSchedule(task, mapOf(newInstance.id to newInstance), emptyList())
+                            )
+                        ),
+                        notifications = emptyList(),
                         summary = null,
                         affectedSchedules = listOf(task.id)
                     )
@@ -271,7 +302,7 @@ class SchedulerServiceSpec {
     )
 
     private val instance = TaskInstance(
-        instant = Instant.now()
+        instant = Instant.now().truncatedTo(ChronoUnit.MILLIS)
     )
 
     private val postponeBy = Duration.ofMinutes(5)

@@ -22,6 +22,7 @@ import androidx.preference.PreferenceManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import eventually.client.R
 import eventually.client.activities.helpers.Common.StyledString
 import eventually.client.activities.helpers.Common.renderAsSpannable
@@ -160,13 +161,20 @@ class TaskDetailsActivity : AppCompatActivity() {
             }
 
             val handlers = task?.let {
+                val view = findViewById<View>(R.id.preview_parent)
+
                 TaskPreview.Handlers(
-                    dismiss = { instance ->
+                    dismiss = { instance, instant ->
                         View.OnClickListener {
                             it.isEnabled = false
                             notificationManager.deleteInstanceNotifications(task.id, instance)
                             TaskManagement.dismissTaskInstance(this, task.id, instance)
-                            Toast.makeText(this, getString(R.string.toast_task_dismissed), Toast.LENGTH_SHORT).show()
+                            Snackbar
+                                .make(view, getString(R.string.snackbar_task_dismissed), Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.snackbar_task_dismissed_action) {
+                                    TaskManagement.undoDismissTaskInstance(this, task.id, instant)
+                                }
+                                .show()
                         }
                     },
                     postpone = { instance ->
@@ -175,7 +183,13 @@ class TaskDetailsActivity : AppCompatActivity() {
                             notificationManager.deleteInstanceNotifications(task.id, instance)
                             val by = PreferenceManager.getDefaultSharedPreferences(this).getPostponeLength()
                             TaskManagement.postponeTaskInstance(this, task.id, instance, by)
-                            Toast.makeText(this, getString(R.string.toast_task_postponed), Toast.LENGTH_SHORT).show()
+                            Snackbar.make(view, getString(R.string.snackbar_task_postponed), Snackbar.LENGTH_SHORT).show()
+                        }
+                    },
+                    undo = { instant ->
+                        View.OnClickListener {
+                            it.isEnabled = false
+                            TaskManagement.undoDismissTaskInstance(this, task.id, instant)
                         }
                     }
                 )

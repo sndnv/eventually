@@ -49,12 +49,15 @@
     <string name="notification_instance_action_dismiss_title">Dismiss</string>
     <string name="notification_instance_action_postpone_title">Postpone</string>
 
-    <!-- Toasts -->
+    <!-- Toasts / Snackbars -->
     <string name="toast_task_created">Task created</string>
     <string name="toast_task_updated">Task updated</string>
     <string name="toast_task_deleted">Task deleted</string>
     <string name="toast_task_dismissed">Task dismissed</string>
     <string name="toast_task_postponed">Task postponed</string>
+    <string name="snackbar_task_dismissed">Task dismissed</string>
+    <string name="snackbar_task_dismissed_action">Undo</string>
+    <string name="snackbar_task_postponed">Task postponed</string>
 
     <!-- Summary -->
     <string name="summary_item_content">%1$s - %2$s (%3$s)</string>
@@ -128,6 +131,7 @@
     <!-- Task Preview -->
     <string name="task_preview_button_text_dismiss">Dismiss</string>
     <string name="task_preview_button_text_postpone">Postpone</string>
+    <string name="task_preview_button_text_undo">Undo</string>
     <string name="task_preview_button_description_delete">Delete Task</string>
     <string name="task_preview_field_title_name">Name</string>
     <string name="task_preview_field_title_description">Description</string>
@@ -135,6 +139,7 @@
     <string name="task_preview_field_title_context_switch">Context Switch</string>
     <string name="task_preview_field_title_schedule">Schedule</string>
     <string name="task_preview_field_title_instances">Instances</string>
+    <string name="task_preview_field_title_instances_dismissed">Dismissed</string>
 
     <string name="task_preview_field_content_inactive">(disabled)</string>
     <string name="task_preview_field_content_context_switch">%d %s</string>
@@ -144,10 +149,12 @@
 
     <string name="task_preview_field_content_instance_execution">%s</string>
     <string name="task_preview_field_content_instance_execution_postponed">%s (postponed)</string>
+    <string name="task_preview_field_content_instance_dismissed">%s</string>
 
     <string name="task_preview_instances_empty_text">None</string>
     <string name="task_preview_instances_too_many_text">Showing %1$s out of %2$s instances</string>
     <string name="task_preview_instances_too_many_tooltip">Dismiss some instances to show more</string>
+    <string name="task_preview_instances_dismissed_empty_text">None</string>
 
     <!-- New Task -->
     <string name="new_task_subtitle">Create Task</string>
