@@ -166,6 +166,10 @@
 
     <!-- Settings -->
     <string name="settings_subtitle">Settings</string>
+    <string name="settings_category_summary">Summary</string>
+    <string name="settings_category_date_time">Date/Time</string>
+    <string name="settings_category_other">Other</string>
+    <string name="settings_category_debug">Debug</string>
     <string name="settings_summary_size_title">Size</string>
     <plurals name="settings_summary_size_hint">
         <item quantity="one">Show expected tasks in the next %2$s</item>
@@ -178,7 +182,7 @@
         <item quantity="one">Postpone a task by %1$s minute</item>
         <item quantity="other">Postpone a task by %1$s minutes</item>
     </plurals>
-    <string name="settings_date_time_format_title">Date/Time format</string>
+    <string name="settings_date_time_format_title">Format</string>
     <string name="settings_date_time_format_hint">Show dates as %1$s and time as %2$s</string>
     <string name="settings_first_day_of_week_title">Start week on</string>
     <string name="settings_first_day_of_week_hint">%1$s</string>
