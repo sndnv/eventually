@@ -60,8 +60,8 @@ android {
         targetSdkVersion(30)
 
         applicationId = "eventually.client"
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1-SNAPSHOT"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
