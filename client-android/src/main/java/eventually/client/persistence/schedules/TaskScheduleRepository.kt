@@ -8,7 +8,9 @@ import eventually.core.model.TaskSchedule
 class TaskScheduleRepository(private val dao: TaskScheduleEntityDao) {
     val schedules: LiveData<List<TaskScheduleEntity>> = dao.get()
 
-    suspend fun put(schedule: TaskSchedule) = dao.put(schedule.asEntity())
+    suspend fun put(schedule: TaskSchedule) = put(schedule.asEntity())
+
+    suspend fun put(schedule: TaskScheduleEntity) = dao.put(schedule)
 
     suspend fun delete(task: Int) = dao.delete(task)
 

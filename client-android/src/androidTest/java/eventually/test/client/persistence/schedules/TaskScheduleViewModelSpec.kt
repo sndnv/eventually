@@ -42,6 +42,19 @@ class TaskScheduleViewModelSpec {
     }
 
     @Test
+    fun createSchedulesFromExistingEntity() {
+        withModel { model ->
+            assertThat(model.schedules.await(), equalTo(emptyList()))
+
+            runBlocking { model.put(entity).await() }
+
+            eventually {
+                assertThat(model.schedules.await(), equalTo(listOf(entity)))
+            }
+        }
+    }
+
+    @Test
     fun updateSchedules() {
         withModel { model ->
             assertThat(model.schedules.await(), equalTo(emptyList()))

@@ -203,6 +203,13 @@
     <string name="stats_content_last_evaluation">%1$s</string>
     <string name="stats_content_next_evaluation">%1$s</string>
     <string name="stats_content_evaluations">Total: %1$s</string>
+    <string name="stats_export_data">Export</string>
+    <string name="stats_export_data_copy">Copy</string>
+    <string name="stats_export_data_clip_label">Data export</string>
+    <string name="stats_export_data_clip_created">Copied to clipboard</string>
+    <string name="stats_import_data">Import</string>
+    <string name="stats_import_data_load">Load</string>
+    <string name="stats_import_data_invalid">Invalid data provided</string>
     <string name="stats_force_evaluation">Force Evaluation</string>
 
     <!-- Date/Time -->

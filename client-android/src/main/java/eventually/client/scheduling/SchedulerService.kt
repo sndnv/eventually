@@ -118,10 +118,10 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         val startResult = super.onStartCommand(intent, flags, startId)
 
         handler.obtainMessage().let { msg ->
-            val obj = intent.toSchedulerMessage {
-                requireConfig()
-                config
-            }
+            val obj = intent.toSchedulerMessage(
+                requireConfig = ::requireConfig,
+                reloadData = ::load
+            )
 
             obj?.let {
                 msg.obj = it
@@ -165,39 +165,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
                 preferences.registerOnSharedPreferenceChangeListener(this@SchedulerService)
 
-                val tasksRepo = TaskRepository(this@SchedulerService)
-                val schedulesRepo = TaskScheduleRepository(this@SchedulerService)
-
-                val tasksWithSchedules: LiveData<Pair<List<Task>, List<TaskScheduleEntity>>> =
-                    object : MediatorLiveData<Pair<List<Task>, List<TaskScheduleEntity>>>() {
-                        var tasks: List<Task>? = null
-                        var schedules: List<TaskScheduleEntity>? = null
-
-                        init {
-                            addSource(tasksRepo.tasks) { tasks ->
-                                this.tasks = tasks
-                                this.schedules?.let { value = tasks to it }
-                            }
-                            addSource(schedulesRepo.schedules) { schedules ->
-                                this.schedules = schedules
-                                this.tasks?.let { value = it to schedules }
-                            }
-                        }
-                    }
-
-                tasksWithSchedules.observe(this@SchedulerService, { (tasks, schedules) ->
-                    tasksWithSchedules.removeObservers(this@SchedulerService)
-
-                    handler.obtainMessage().let { msg ->
-                        val schedulesWithTasks = schedules.mapNotNull { schedule ->
-                            tasks.find { it.id == schedule.task }?.let { schedule.asSchedule(it) }
-                        }
-
-                        tasksRepo.tasks.removeObservers(this@SchedulerService)
-                        msg.obj = SchedulerOps.Message.Init(tasks, schedulesWithTasks)
-                        handler.sendMessage(msg)
-                    }
-                })
+                load()
             }
         }
 
@@ -215,8 +183,45 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         unregisterReceiver(postponeReceiver)
     }
 
-    private fun requireConfig() {
+    private fun requireConfig(): TaskSummaryConfig {
         require(::config.isInitialized) { "Scheduler service must be initialized first" }
+        return config
+    }
+
+    private fun load() {
+        val tasksRepo = TaskRepository(this@SchedulerService)
+        val schedulesRepo = TaskScheduleRepository(this@SchedulerService)
+
+        val tasksWithSchedules: LiveData<Pair<List<Task>, List<TaskScheduleEntity>>> =
+            object : MediatorLiveData<Pair<List<Task>, List<TaskScheduleEntity>>>() {
+                var tasks: List<Task>? = null
+                var schedules: List<TaskScheduleEntity>? = null
+
+                init {
+                    addSource(tasksRepo.tasks) { tasks ->
+                        this.tasks = tasks
+                        this.schedules?.let { value = tasks to it }
+                    }
+                    addSource(schedulesRepo.schedules) { schedules ->
+                        this.schedules = schedules
+                        this.tasks?.let { value = it to schedules }
+                    }
+                }
+            }
+
+        tasksWithSchedules.observe(this@SchedulerService, { (tasks, schedules) ->
+            tasksWithSchedules.removeObservers(this@SchedulerService)
+
+            handler.obtainMessage().let { msg ->
+                val schedulesWithTasks = schedules.mapNotNull { schedule ->
+                    tasks.find { it.id == schedule.task }?.let { schedule.asSchedule(it) }
+                }
+
+                tasksRepo.tasks.removeObservers(this@SchedulerService)
+                msg.obj = SchedulerOps.Message.Init(tasks, schedulesWithTasks)
+                handler.sendMessage(msg)
+            }
+        })
     }
 
     inner class SchedulerBinder : Binder() {
@@ -244,9 +249,11 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         const val ActionPostponeExtraBy: String = "eventually.client.scheduling.SchedulerService.Postpone.extra_by"
 
         const val ActionEvaluate: String = "eventually.client.scheduling.SchedulerService.Evaluate"
+        const val ActionReload: String = "eventually.client.scheduling.SchedulerService.Reload"
 
         fun Intent?.toSchedulerMessage(
-            requireConfig: () -> TaskSummaryConfig
+            requireConfig: () -> TaskSummaryConfig,
+            reloadData: () -> Unit
         ): SchedulerOps.Message? =
             when (this?.action) {
                 ActionPut -> {
@@ -292,6 +299,13 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                     val config = requireConfig()
 
                     SchedulerOps.Message.Evaluate(config)
+                }
+
+                ActionReload -> {
+                    requireConfig()
+
+                    reloadData()
+                    null
                 }
 
                 null -> null

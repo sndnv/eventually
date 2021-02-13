@@ -1,6 +1,7 @@
 package eventually.test.client.persistence
 
 import eventually.client.persistence.Converters
+import eventually.client.persistence.DataExport
 import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.schedules.TaskScheduleEntity
 import eventually.client.persistence.tasks.TaskEntity
@@ -8,6 +9,7 @@ import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
+import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Assert.fail
@@ -22,6 +24,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.Period
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @RunWith(RobolectricTestRunner::class)
@@ -406,5 +409,65 @@ class ConvertersSpec {
         )
 
         assertThat(Converters.notificationToEntity(task, instance, "execution"), equalTo(entity))
+    }
+
+    @Test
+    fun convertDataExportsToJson() {
+        val start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
+
+        val task = Task(
+            id = 42,
+            name = "test-task",
+            description = "test-description",
+            goal = "test-goal",
+            schedule = Task.Schedule.Repeating(
+                start = start,
+                every = Duration.ofMinutes(20).toInterval(),
+                days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
+            ),
+            contextSwitch = Duration.ofMinutes(5),
+            isActive = true
+        )
+
+        val instant = Instant.now().truncatedTo(ChronoUnit.SECONDS)
+        val instance1 = TaskInstance(instant = instant)
+        val instance2 = TaskInstance(instant = instant.plusSeconds(42)).copy(postponed = Duration.ofMinutes(5))
+        val instance3 = TaskInstance(instant = instant.minusSeconds(42))
+
+        val instances = mapOf(
+            instance1.id to instance1,
+            instance2.id to instance2,
+            instance3.id to instance3
+        )
+
+        val dismissed = listOf(instant, instant.plusSeconds(21), instant.minusSeconds(21))
+
+        val schedule = TaskScheduleEntity(
+            task = task.id,
+            instances = instances,
+            dismissed = dismissed
+        )
+
+        val notification = NotificationEntity(
+            id = 0,
+            task = task.id,
+            instance = instance1.id,
+            type = "execution",
+            hash = instance1.hashCode()
+        )
+
+        val original = DataExport(
+            tasks = listOf(task),
+            schedules = listOf(schedule),
+            notifications = listOf(notification)
+        )
+
+        val converted = Converters.dataExportToString(original)
+
+        assertThat(converted, containsString(""""tasks":[{"id":42"""))
+        assertThat(converted, containsString(""""schedules":[{"task":42"""))
+        assertThat(converted, containsString(""""notifications":[{"id":0,"task":42"""))
+
+        assertThat(Converters.stringToDataExport(converted), equalTo(original))
     }
 }

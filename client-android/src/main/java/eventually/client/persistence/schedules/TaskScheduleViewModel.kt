@@ -22,6 +22,14 @@ class TaskScheduleViewModel(application: Application) : AndroidViewModel(applica
         return response
     }
 
+    fun put(schedule: TaskScheduleEntity): CompletableDeferred<Unit> {
+        val response = CompletableDeferred(Unit)
+        viewModelScope.launch(Dispatchers.IO) {
+            response.complete(repo.put(schedule))
+        }
+        return response
+    }
+
     fun delete(task: Int): CompletableDeferred<Unit> {
         val response = CompletableDeferred<Unit>()
         viewModelScope.launch(Dispatchers.IO) {

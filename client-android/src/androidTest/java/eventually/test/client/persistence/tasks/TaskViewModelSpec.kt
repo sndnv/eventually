@@ -81,11 +81,11 @@ class TaskViewModelSpec {
             assertThat(model.tasks.await(), equalTo(emptyList()))
 
             runBlocking {
-                model.put(task.copy(goal = "goal-1"))
-                model.put(task.copy(goal = "goal-2"))
-                model.put(task.copy(goal = "goal-3"))
-                model.put(task.copy(goal = "goal-2"))
-                model.put(task.copy(goal = "goal-3"))
+                model.put(task.copy(goal = "goal-1")).await()
+                model.put(task.copy(goal = "goal-2")).await()
+                model.put(task.copy(goal = "goal-3")).await()
+                model.put(task.copy(goal = "goal-2")).await()
+                model.put(task.copy(goal = "goal-3")).await()
             }
 
             assertThat(model.tasks.await().size, equalTo(5))
