@@ -51,7 +51,7 @@ class SchedulerServiceSpec {
         assertThat(
             context.createIntent(SchedulerService.ActionPut) {
                 it.putTask(SchedulerService.ActionPutExtraTask, task)
-            }.toSchedulerMessage(::requireConfig),
+            }.toSchedulerMessage(::requireConfig, ::reload),
             equalTo(
                 SchedulerOps.Message.Put(task)
             )
@@ -60,7 +60,7 @@ class SchedulerServiceSpec {
         assertThat(
             context.createIntent(SchedulerService.ActionDelete) {
                 it.putTaskId(SchedulerService.ActionDeleteExtraTask, task.id)
-            }.toSchedulerMessage(::requireConfig),
+            }.toSchedulerMessage(::requireConfig, ::reload),
             equalTo(
                 SchedulerOps.Message.Delete(task.id)
             )
@@ -70,7 +70,7 @@ class SchedulerServiceSpec {
             context.createIntent(SchedulerService.ActionDismiss) {
                 it.putTaskId(SchedulerService.ActionDismissExtraTask, task.id)
                 it.putInstanceId(SchedulerService.ActionDismissExtraInstance, instance.id)
-            }.toSchedulerMessage(::requireConfig),
+            }.toSchedulerMessage(::requireConfig, ::reload),
             equalTo(
                 SchedulerOps.Message.Dismiss(task.id, instance.id)
             )
@@ -80,7 +80,7 @@ class SchedulerServiceSpec {
             context.createIntent(SchedulerService.ActionUndoDismiss) {
                 it.putTaskId(SchedulerService.ActionUndoDismissExtraTask, task.id)
                 it.putInstant(SchedulerService.ActionUndoDismissExtraInstant, instance.instant)
-            }.toSchedulerMessage(::requireConfig),
+            }.toSchedulerMessage(::requireConfig, ::reload),
             equalTo(
                 SchedulerOps.Message.UndoDismiss(task.id, instance.instant)
             )
@@ -91,26 +91,34 @@ class SchedulerServiceSpec {
                 it.putTaskId(SchedulerService.ActionPostponeExtraTask, task.id)
                 it.putInstanceId(SchedulerService.ActionPostponeExtraInstance, instance.id)
                 it.putDuration(SchedulerService.ActionPostponeExtraBy, postponeBy)
-            }.toSchedulerMessage(::requireConfig),
+            }.toSchedulerMessage(::requireConfig, ::reload),
             equalTo(
                 SchedulerOps.Message.Postpone(task.id, instance.id, postponeBy)
             )
         )
 
         assertThat(
-            context.createIntent(SchedulerService.ActionEvaluate) { it }.toSchedulerMessage(::requireConfig),
+            context.createIntent(SchedulerService.ActionEvaluate) { it }.toSchedulerMessage(::requireConfig, ::reload),
             equalTo(
                 SchedulerOps.Message.Evaluate(config)
             )
         )
 
+        val reloaded = AtomicBoolean(false)
         assertThat(
-            null.toSchedulerMessage(::requireConfig),
+            context.createIntent(SchedulerService.ActionReload) { it }
+                .toSchedulerMessage(::requireConfig, reloadData = { reloaded.set(true) }),
+            equalTo(null)
+        )
+        assertThat(reloaded.get(), equalTo(true))
+
+        assertThat(
+            null.toSchedulerMessage(::requireConfig, ::reload),
             equalTo(null)
         )
 
         try {
-            context.createIntent("other") { it }.toSchedulerMessage(::requireConfig)
+            context.createIntent("other") { it }.toSchedulerMessage(::requireConfig, ::reload)
             fail("Excepted failure but none encountered")
         } catch (e: IllegalArgumentException) {
             assertThat(e.message, equalTo("Unexpected action encountered: [other]"))
@@ -259,7 +267,7 @@ class SchedulerServiceSpec {
             assertThat(notifications.notifications.isEmpty(), equalTo(true))
 
             val model = mockk<TaskScheduleViewModel>()
-            every { model.put(any()) } returns CompletableDeferred(Unit)
+            every { model.put(any() as TaskSchedule) } returns CompletableDeferred(Unit)
             every { model.delete(any()) } returns CompletableDeferred(Unit)
 
             result.applyTo(
@@ -285,6 +293,8 @@ class SchedulerServiceSpec {
         }
 
     private fun requireConfig(): TaskSummaryConfig = config
+
+    private fun reload() = Unit
 
     private val config = TaskSummaryConfig(summarySize = Duration.ofMinutes(15))
 

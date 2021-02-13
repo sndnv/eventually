@@ -24,6 +24,14 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
         return response
     }
 
+    fun put(notification: NotificationEntity): CompletableDeferred<Long> {
+        val response = CompletableDeferred<Long>()
+        viewModelScope.launch(Dispatchers.IO) {
+            response.complete(repo.put(notification))
+        }
+        return response
+    }
+
     fun get(task: Int, instance: UUID, type: String): CompletableDeferred<NotificationEntity?> {
         val response = CompletableDeferred<NotificationEntity?>()
         viewModelScope.launch(Dispatchers.IO) {

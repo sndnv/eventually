@@ -38,6 +38,16 @@ class NotificationRepositorySpec {
     }
 
     @Test
+    fun createNotificationEntitiesFromExistingEntity() {
+        val repo = createRepo()
+
+        assertThat(repo.notifications.await(), equalTo(emptyList()))
+
+        runBlocking { repo.put(entity) }
+        assertThat(repo.notifications.await(), equalTo(listOf(entity)))
+    }
+
+    @Test
     fun retrieveNotificationEntitiesBasedOnQuery() {
         val repo = createRepo()
 

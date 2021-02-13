@@ -42,6 +42,21 @@ class NotificationViewModelSpec {
         }
     }
 
+    @Test
+    fun createNotificationsFromExistingEntity() {
+        withModel { model ->
+            assertThat(model.notifications.await(), equalTo(emptyList()))
+
+            runBlocking { model.put(entity).await() }
+
+            eventually {
+                assertThat(
+                    model.notifications.await().map { it.copy(id = entity.id) },
+                    equalTo(listOf(entity))
+                )
+            }
+        }
+    }
 
     @Test
     fun retrieveNotificationEntitiesBasedOnQuery() {

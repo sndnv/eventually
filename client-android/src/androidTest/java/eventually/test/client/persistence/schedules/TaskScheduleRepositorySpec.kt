@@ -39,6 +39,16 @@ class TaskScheduleRepositorySpec {
     }
 
     @Test
+    fun createSchedulesFromExistingEntity() {
+        val repo = createRepo()
+
+        assertThat(repo.schedules.await(), equalTo(emptyList()))
+
+        runBlocking { repo.put(entity) }
+        assertThat(repo.schedules.await(), equalTo(listOf(entity)))
+    }
+
+    @Test
     fun updateSchedules() {
         val repo = createRepo()
 

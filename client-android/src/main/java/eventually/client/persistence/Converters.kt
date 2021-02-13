@@ -77,6 +77,10 @@ class Converters {
         fun Task.toJson(): String = taskToString(this)
         fun String.toTask(): Task = stringToTask(this)
 
+        fun DataExport.toJson(): String = dataExportToString(this)
+
+        fun String.toDataExport(): DataExport = stringToDataExport(this)
+
         fun TaskSchedule.asEntity(): TaskScheduleEntity = scheduleToEntity(this)
         fun TaskScheduleEntity.asSchedule(task: Task): TaskSchedule = entityToSchedule(this, task)
 
@@ -103,32 +107,11 @@ class Converters {
             isActive = entity.isActive
         )
 
-        fun taskToString(task: Task): String {
-            val json = JsonObject()
-            json.addProperty("id", task.id)
-            json.addProperty("name", task.name)
-            json.addProperty("description", task.description)
-            json.addProperty("goal", task.goal)
-            json.add("schedule", scheduleToJson(task.schedule))
-            json.addProperty("context_switch", task.contextSwitch.seconds)
-            json.addProperty("is_active", task.isActive)
+        fun taskToString(task: Task): String =
+            Gson().toJson(taskToJson(task))
 
-            return Gson().toJson(json)
-        }
-
-        fun stringToTask(task: String): Task {
-            val json = Gson().fromJson(task, JsonObject::class.java)
-
-            return Task(
-                id = json.get("id").asInt,
-                name = json.get("name").asString,
-                description = json.get("description").asString,
-                goal = json.get("goal").asString,
-                schedule = jsonToSchedule(json.get("schedule").asJsonObject),
-                contextSwitch = Duration.ofSeconds(json.get("context_switch").asLong),
-                isActive = json.get("is_active").asBoolean
-            )
-        }
+        fun stringToTask(task: String): Task =
+            jsonToTask(Gson().fromJson(task, JsonObject::class.java))
 
         fun scheduleToEntity(schedule: TaskSchedule): TaskScheduleEntity = TaskScheduleEntity(
             task = schedule.task.id,
@@ -149,6 +132,86 @@ class Converters {
             type = type,
             hash = instance.hashCode()
         )
+
+        fun dataExportToString(export: DataExport): String {
+            val json = JsonObject()
+            json.add("tasks", JsonArray().apply { export.tasks.forEach { add(taskToJson(it)) } })
+            json.add("schedules", JsonArray().apply { export.schedules.forEach { add(taskScheduleEntityToJson(it)) } })
+            json.add("notifications", JsonArray().apply { export.notifications.forEach { add(notificationEntityToJson(it)) } })
+
+            return Gson().toJson(json)
+        }
+
+        fun stringToDataExport(export: String): DataExport {
+            val json = Gson().fromJson(export, JsonObject::class.java)
+
+            return DataExport(
+                tasks = json.get("tasks").asJsonArray.map { jsonToTask(it.asJsonObject) },
+                schedules = json.get("schedules").asJsonArray.map { jsonToTaskScheduleEntity(it.asJsonObject) },
+                notifications = json.get("notifications").asJsonArray.map { jsonToNotificationEntity(it.asJsonObject) }
+            )
+        }
+
+        private fun taskScheduleEntityToJson(schedule: TaskScheduleEntity): JsonObject {
+            val json = JsonObject()
+            json.addProperty("task", schedule.task)
+            json.add("instances", instancesToJson(schedule.instances))
+            json.add("dismissed", dismissedToJson(schedule.dismissed))
+
+            return json
+        }
+
+        private fun jsonToTaskScheduleEntity(schedule: JsonObject): TaskScheduleEntity =
+            TaskScheduleEntity(
+                task = schedule.get("task").asInt,
+                instances = jsonToInstances(schedule.get("instances").asJsonObject),
+                dismissed = jsonToDismissed(schedule.get("dismissed").asJsonArray)
+            )
+
+        private fun notificationEntityToJson(notification: NotificationEntity): JsonObject {
+            val json = JsonObject()
+            json.addProperty("id", notification.id)
+            json.addProperty("task", notification.task)
+            json.addProperty("instance", notification.instance.toString())
+            json.addProperty("type", notification.type)
+            json.addProperty("hash", notification.hash)
+
+            return json
+        }
+
+        private fun jsonToNotificationEntity(notification: JsonObject): NotificationEntity =
+            NotificationEntity(
+                id = notification.get("id").asInt,
+                task = notification.get("task").asInt,
+                instance = UUID.fromString(notification.get("instance").asString),
+                type = notification.get("type").asString,
+                hash = notification.get("hash").asInt,
+            )
+
+        private fun taskToJson(task: Task): JsonObject {
+            val json = JsonObject()
+            json.addProperty("id", task.id)
+            json.addProperty("name", task.name)
+            json.addProperty("description", task.description)
+            json.addProperty("goal", task.goal)
+            json.add("schedule", scheduleToJson(task.schedule))
+            json.addProperty("context_switch", task.contextSwitch.seconds)
+            json.addProperty("is_active", task.isActive)
+
+            return json
+        }
+
+        private fun jsonToTask(task: JsonObject): Task {
+            return Task(
+                id = task.get("id").asInt,
+                name = task.get("name").asString,
+                description = task.get("description").asString,
+                goal = task.get("goal").asString,
+                schedule = jsonToSchedule(task.get("schedule").asJsonObject),
+                contextSwitch = Duration.ofSeconds(task.get("context_switch").asLong),
+                isActive = task.get("is_active").asBoolean
+            )
+        }
 
         private fun intervalToJson(interval: Task.Schedule.Repeating.Interval): JsonObject {
             val json = JsonObject()

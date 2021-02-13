@@ -11,7 +11,10 @@ class NotificationRepository(private val dao: NotificationEntityDao) {
     val notifications: LiveData<List<NotificationEntity>> = dao.get()
 
     suspend fun put(task: Task, instance: TaskInstance, type: String): Long =
-        dao.put((task to instance).asNotificationEntity(type))
+        put((task to instance).asNotificationEntity(type))
+
+    suspend fun put(notification: NotificationEntity): Long =
+        dao.put(notification)
 
     suspend fun get(task: Int, instance: UUID, type: String): NotificationEntity? =
         dao.get(task, instance, type)
