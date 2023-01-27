@@ -4,29 +4,28 @@ import android.content.SharedPreferences
 import java.time.DayOfWeek
 import java.time.Duration
 import java.util.Calendar
-import java.util.Locale
 
 object Settings {
-    fun SharedPreferences.getSummarySize(): Duration {
-        val size = (getString(Keys.SummarySize, Defaults.SummarySize) ?: Defaults.SummarySize).toLong()
+    fun SharedPreferences?.getSummarySize(): Duration {
+        val size = (this?.getString(Keys.SummarySize, Defaults.SummarySize) ?: Defaults.SummarySize).toLong()
         return Duration.ofMinutes(size)
     }
 
-    fun SharedPreferences.getSummaryMaxTasks(): Int {
-        return (getString(Keys.SummaryMaxTasks, Defaults.SummaryMaxTasks) ?: Defaults.SummaryMaxTasks).toInt()
+    fun SharedPreferences?.getSummaryMaxTasks(): Int {
+        return (this?.getString(Keys.SummaryMaxTasks, Defaults.SummaryMaxTasks) ?: Defaults.SummaryMaxTasks).toInt()
     }
 
-    fun SharedPreferences.getPostponeLength(): Duration {
-        val size = (getString(Keys.PostponeLength, Defaults.PostponeLength) ?: Defaults.PostponeLength).toLong()
+    fun SharedPreferences?.getPostponeLength(): Duration {
+        val size = (this?.getString(Keys.PostponeLength, Defaults.PostponeLength) ?: Defaults.PostponeLength).toLong()
         return Duration.ofMinutes(size)
     }
 
-    fun SharedPreferences.getDateTimeFormat(): DateTimeFormat {
-        return parseDateTimeFormat(getString(Keys.DateTimeFormat, Defaults.DateTimeFormat) ?: Defaults.DateTimeFormat)
+    fun SharedPreferences?.getDateTimeFormat(): DateTimeFormat {
+        return parseDateTimeFormat(this?.getString(Keys.DateTimeFormat, Defaults.DateTimeFormat) ?: Defaults.DateTimeFormat)
     }
 
-    fun SharedPreferences.getFirstDayOfWeek(): DayOfWeek {
-        return parseDay(getString(Keys.FirstDayOfWeek, Defaults.FirstDayOfWeek) ?: Defaults.FirstDayOfWeek)
+    fun SharedPreferences?.getFirstDayOfWeek(): DayOfWeek {
+        return parseDay(this?.getString(Keys.FirstDayOfWeek, Defaults.FirstDayOfWeek) ?: Defaults.FirstDayOfWeek)
     }
 
     fun SharedPreferences.getStatsEnabled(): Boolean {
@@ -47,7 +46,7 @@ object Settings {
     fun parseDay(day: String): DayOfWeek {
         return when (day) {
             "system" -> Calendar.getInstance().firstDayOfWeek.toDayOfWeek()
-            else -> DayOfWeek.valueOf(day.toUpperCase(Locale.getDefault()))
+            else -> DayOfWeek.valueOf(day.uppercase())
         }
     }
 

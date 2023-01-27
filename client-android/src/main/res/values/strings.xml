@@ -40,11 +40,11 @@
 
     <!-- Notifications -->
     <string name="notification_foreground_service_title">Background Scheduler Running</string>
-    <string name="notification_instance_execution_title">[%s] - %s</string>
-    <string name="notification_instance_execution_text">[%s] - %s</string>
+    <string name="notification_instance_execution_title">[%1$s] - %2$s</string>
+    <string name="notification_instance_execution_text">[%1$s] - %2$s</string>
     <string name="notification_instance_execution_no_description_text">[%s]</string>
-    <string name="notification_instance_context_switch_title">[%s] - %s</string>
-    <string name="notification_instance_context_switch_text">[%s] - %s</string>
+    <string name="notification_instance_context_switch_title">[%1$s] - %2$s</string>
+    <string name="notification_instance_context_switch_text">[%1$s] - %2$s</string>
     <string name="notification_instance_context_switch_no_description_text">[%s]</string>
     <string name="notification_instance_action_dismiss_title">Dismiss</string>
     <string name="notification_instance_action_postpone_title">Postpone</string>
@@ -61,7 +61,7 @@
 
     <!-- Summary -->
     <string name="summary_item_content">%1$s - %2$s (%3$s)</string>
-    <string name="summary_item_instant">%s at %s</string>
+    <string name="summary_item_instant">%1$s at %2$s</string>
     <string name="summary_item_instant_today">%s</string>
 
     <!-- Summary / Expired -->

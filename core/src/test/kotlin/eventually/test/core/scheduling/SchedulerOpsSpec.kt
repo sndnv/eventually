@@ -78,7 +78,8 @@ class SchedulerOpsSpec : WordSpec({
             val instanceInContextSwitch = result.schedules[taskInContextSwitch.id]?.instances?.values?.first()
             instanceInContextSwitch shouldNotBe (null)
 
-            val instancesInRepeatingTask = result.schedules[repeatingTask.id]?.instances?.values?.toList() ?: emptyList()
+            val instancesInRepeatingTask =
+                result.schedules[repeatingTask.id]?.instances?.values?.toList() ?: emptyList()
             instancesInRepeatingTask.isNotEmpty() shouldBe (true)
 
             result.summary shouldNotBe (null)
@@ -105,7 +106,8 @@ class SchedulerOpsSpec : WordSpec({
                     )
 
             result.schedules[taskInExecution.id]?.instances?.values?.first()?.execution() shouldBe (now)
-            result.schedules[taskInContextSwitch.id]?.instances?.values?.first()?.execution() shouldBe (contextSwitchTime)
+            result.schedules[taskInContextSwitch.id]?.instances?.values?.first()
+                ?.execution() shouldBe (contextSwitchTime)
             result.schedules[taskInFuture.id]?.instances?.values?.first()?.execution() shouldBe (futureTime)
             result.schedules[disabledTask.id]?.instances shouldBe (emptyMap())
 
@@ -208,7 +210,12 @@ class SchedulerOpsSpec : WordSpec({
             val instance = schedules.values.first().instances.values.first()
 
             result.schedules.map { it.value.task } shouldBe (listOf(updatedTask))
-            result.notifications shouldBe (listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id)))
+            result.notifications shouldBe (listOf(
+                SchedulerOps.Notification.DeleteInstanceNotifications(
+                    task.id,
+                    instance.id
+                )
+            ))
             result.summary shouldBe (null)
             result.affectedSchedules shouldBe (listOf(task.id))
         }
@@ -222,7 +229,12 @@ class SchedulerOpsSpec : WordSpec({
             val result = SchedulerOps.put(schedules, SchedulerOps.Message.Put(task.copy(isActive = false)))
 
             result.schedules.values.first().instances.isEmpty() shouldBe (true)
-            result.notifications shouldBe (listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id)))
+            result.notifications shouldBe (listOf(
+                SchedulerOps.Notification.DeleteInstanceNotifications(
+                    task.id,
+                    instance.id
+                )
+            ))
         }
 
         "support removing existing tasks" {
@@ -233,7 +245,12 @@ class SchedulerOpsSpec : WordSpec({
             val instance = schedules.values.first().instances.values.first()
 
             result.schedules shouldBe (emptyMap())
-            result.notifications shouldBe (listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id)))
+            result.notifications shouldBe (listOf(
+                SchedulerOps.Notification.DeleteInstanceNotifications(
+                    task.id,
+                    instance.id
+                )
+            ))
             result.summary shouldBe (null)
             result.affectedSchedules shouldBe (listOf(task.id))
         }
@@ -260,7 +277,12 @@ class SchedulerOpsSpec : WordSpec({
             val result = SchedulerOps.dismiss(schedules, SchedulerOps.Message.Dismiss(task.id, instance.id))
 
             result.schedules.map { it.value.task } shouldBe (listOf(task))
-            result.notifications shouldBe (listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id)))
+            result.notifications shouldBe (listOf(
+                SchedulerOps.Notification.DeleteInstanceNotifications(
+                    task.id,
+                    instance.id
+                )
+            ))
             result.summary shouldBe (null)
             result.affectedSchedules shouldBe (listOf(task.id))
 
@@ -270,7 +292,8 @@ class SchedulerOpsSpec : WordSpec({
         "do nothing when dismissing missing tasks" {
             val schedules = emptyMap<Int, TaskSchedule>()
 
-            val result = SchedulerOps.dismiss(schedules, SchedulerOps.Message.Dismiss(task = 0, instance = UUID.randomUUID()))
+            val result =
+                SchedulerOps.dismiss(schedules, SchedulerOps.Message.Dismiss(task = 0, instance = UUID.randomUUID()))
 
             result.schedules shouldBe (emptyMap())
             result.notifications shouldBe (emptyList())
@@ -321,7 +344,8 @@ class SchedulerOpsSpec : WordSpec({
         "do nothing when undoing dismissal of missing tasks" {
             val schedules = emptyMap<Int, TaskSchedule>()
 
-            val result = SchedulerOps.undoDismiss(schedules, SchedulerOps.Message.UndoDismiss(task = 0, instant = Instant.now()))
+            val result =
+                SchedulerOps.undoDismiss(schedules, SchedulerOps.Message.UndoDismiss(task = 0, instant = Instant.now()))
 
             result.schedules shouldBe (emptyMap())
             result.notifications shouldBe (emptyList())
@@ -339,13 +363,19 @@ class SchedulerOpsSpec : WordSpec({
             instance.postponed shouldBe (null)
 
             val postponedDuration = Duration.ofSeconds(30)
-            val result = SchedulerOps.postpone(schedules, SchedulerOps.Message.Postpone(task.id, instance.id, postponedDuration))
+            val result =
+                SchedulerOps.postpone(schedules, SchedulerOps.Message.Postpone(task.id, instance.id, postponedDuration))
 
             val updatedInstance = result.schedules.values.first().instances.values.first()
             updatedInstance.postponed shouldBe (postponedDuration)
 
             result.schedules.map { it.value.task } shouldBe (listOf(task))
-            result.notifications shouldBe (listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id)))
+            result.notifications shouldBe (listOf(
+                SchedulerOps.Notification.DeleteInstanceNotifications(
+                    task.id,
+                    instance.id
+                )
+            ))
             result.summary shouldBe (null)
             result.affectedSchedules shouldBe (listOf(task.id))
         }

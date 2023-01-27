@@ -25,7 +25,7 @@ class NewTaskActivity : AppCompatActivity() {
             val binding: ActivityNewTaskBinding = DataBindingUtil.setContentView(this, R.layout.activity_new_task)
 
             findViewById<MaterialToolbar>(R.id.topAppBar).setNavigationOnClickListener {
-                onBackPressed()
+                onBackPressedDispatcher.onBackPressed()
             }
 
             val fields = initTaskDetails(

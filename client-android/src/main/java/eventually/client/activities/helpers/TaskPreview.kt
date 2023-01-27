@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
@@ -32,11 +33,6 @@ import eventually.client.settings.Settings.getShowAllInstances
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
-import kotlinx.android.synthetic.main.list_item_task_instance.view.button_dismiss
-import kotlinx.android.synthetic.main.list_item_task_instance.view.button_postpone
-import kotlinx.android.synthetic.main.list_item_task_instance.view.task_instance_content
-import kotlinx.android.synthetic.main.list_item_task_instance_dismissed.view.button_undo
-import kotlinx.android.synthetic.main.list_item_task_instance_dismissed.view.task_instance_dismissed_content
 import java.time.Instant
 import java.util.UUID
 
@@ -205,7 +201,8 @@ object TaskPreview {
         ArrayAdapter<TaskInstance>(context, resource, instances) {
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val layout = (convertView ?: LayoutInflater.from(parent.context).inflate(resource, parent, false)) as ConstraintLayout
+            val layout = (convertView ?: LayoutInflater.from(parent.context)
+                .inflate(resource, parent, false)) as ConstraintLayout
             val instance = instances[position]
 
             val execution = instance.execution().formatAsFullDateTime(context)
@@ -219,17 +216,17 @@ object TaskPreview {
                 execution
             )
 
-            layout.task_instance_content.text = content
+            layout.findViewById<TextView>(R.id.task_instance_content).text = content
 
-            layout.button_dismiss.setOnClickListener(handlers?.let {
+            layout.findViewById<Button>(R.id.button_dismiss).setOnClickListener(handlers?.let {
                 it.dismiss(instance.id, instance.instant)
             })
 
-            layout.button_postpone.setOnClickListener(handlers?.let {
+            layout.findViewById<Button>(R.id.button_postpone).setOnClickListener(handlers?.let {
                 it.postpone(instance.id)
             })
 
-            layout.button_postpone.isEnabled = taskActive
+            layout.findViewById<Button>(R.id.button_postpone).isEnabled = taskActive
 
             return layout
         }
@@ -243,15 +240,16 @@ object TaskPreview {
     ) :
         ArrayAdapter<Instant>(context, resource, instances) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            val layout = (convertView ?: LayoutInflater.from(parent.context).inflate(resource, parent, false)) as ConstraintLayout
+            val layout = (convertView ?: LayoutInflater.from(parent.context)
+                .inflate(resource, parent, false)) as ConstraintLayout
             val instance = instances[position]
 
-            layout.task_instance_dismissed_content.text = context.getString(
+            layout.findViewById<TextView>(R.id.task_instance_dismissed_content).text = context.getString(
                 R.string.task_preview_field_content_instance_dismissed,
                 instance.formatAsFullDateTime(context)
             )
 
-            layout.button_undo.setOnClickListener(handlers?.let {
+            layout.findViewById<Button>(R.id.button_undo).setOnClickListener(handlers?.let {
                 it.undo(instance)
             })
 

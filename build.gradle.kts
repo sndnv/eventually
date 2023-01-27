@@ -7,13 +7,13 @@ buildscript {
     }
 
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.4.21")
-        classpath("com.android.tools.build:gradle:4.1.2")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.21")
+        classpath("com.android.tools.build:gradle:7.4.0")
     }
 }
 
 plugins {
-    id("io.gitlab.arturbosch.detekt") version "1.12.0-RC1"
+    id("io.gitlab.arturbosch.detekt") version "1.22.0"
     jacoco
 }
 
@@ -26,7 +26,7 @@ allprojects {
 }
 
 subprojects {
-    version = "1.0.1-SNAPSHOT"
+    version = "1.1.0-SNAPSHOT"
 }
 
 allprojects {

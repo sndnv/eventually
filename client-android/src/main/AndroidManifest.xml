@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="eventually.client">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
-        android:fullBackupContent="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -17,7 +17,9 @@
             android:name=".scheduling.SchedulerService"
             android:exported="false" />
 
-        <receiver android:name=".activities.receivers.SystemConfigurationChangedReceiver">
+        <receiver
+            android:name=".activities.receivers.SystemConfigurationChangedReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
                 <action android:name="android.intent.action.TIME_SET" />
@@ -25,7 +27,9 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".activities.receivers.SystemStartedReceiver">
+        <receiver
+            android:name=".activities.receivers.SystemStartedReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
@@ -33,13 +37,12 @@
 
         <activity
             android:name=".activities.NewTaskActivity"
-            android:label="@string/app_name"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
 
         <activity
             android:name=".activities.MainActivity"
-            android:label="@string/app_name"
+            android:exported="true"
             android:theme="@style/AppTheme">
 
             <intent-filter>
@@ -58,25 +61,21 @@
 
         <activity
             android:name=".activities.TaskDetailsActivity"
-            android:label="@string/app_name"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
 
         <activity
             android:name=".activities.SettingsActivity"
-            android:label="@string/app_name"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
 
         <activity
             android:name=".activities.StatsActivity"
-            android:label="@string/app_name"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
 
         <activity
             android:name=".activities.AboutActivity"
-            android:label="@string/app_name"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
     </application>
