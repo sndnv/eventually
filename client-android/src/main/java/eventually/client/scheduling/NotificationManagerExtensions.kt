@@ -109,9 +109,12 @@ object NotificationManagerExtensions {
         cancel(getInstanceNotificationId(task, instance))
     }
 
-    fun createForegroundServiceNotification(context: Context, config: Config = Config.Default): Pair<Int, Notification> {
+    fun createForegroundServiceNotification(
+        context: Context,
+        config: Config = Config.Default
+    ): Pair<Int, Notification> {
         val pendingIntent: PendingIntent = Intent(context, SchedulerService::class.java).let {
-            PendingIntent.getActivity(context, 0, it, 0)
+            PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_IMMUTABLE)
         }
 
         val notificationId = -1
@@ -167,7 +170,7 @@ object NotificationManagerExtensions {
                 context,
                 getInstanceNotificationId(task, instance) + DetailsActivityRequestCode,
                 intent,
-                PendingIntent.FLAG_ONE_SHOT
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
             )
         }
 
@@ -179,7 +182,7 @@ object NotificationManagerExtensions {
                     putTaskId(DismissReceiver.ExtraTask, task.id)
                     putInstanceId(DismissReceiver.ExtraInstance, instance.id)
                 },
-                PendingIntent.FLAG_ONE_SHOT
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
             )
         }
 
@@ -193,7 +196,7 @@ object NotificationManagerExtensions {
                     putInstanceId(PostponeReceiver.ExtraInstance, instance.id)
                     putDuration(PostponeReceiver.ExtraBy, by)
                 },
-                PendingIntent.FLAG_ONE_SHOT
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
             )
         }
 

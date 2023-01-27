@@ -62,9 +62,9 @@ class NotificationManagerExtensionsSpec {
 
         manager.putInstanceExecutionNotification(context, task, instance)
 
-        assertThat(notification.captured.extras.get(Notification.EXTRA_TITLE) as String, containsString(task.name))
-        assertThat(notification.captured.extras.get(Notification.EXTRA_TEXT) as String, containsString(task.goal))
-        assertThat(notification.captured.extras.get(Notification.EXTRA_TEXT) as String, containsString(task.description))
+        assertThat(notification.captured.extras.getString(Notification.EXTRA_TITLE) , containsString(task.name))
+        assertThat(notification.captured.extras.getString(Notification.EXTRA_TEXT), containsString(task.goal))
+        assertThat(notification.captured.extras.getString(Notification.EXTRA_TEXT), containsString(task.description))
 
         assertThat(notification.captured.actions.size, equalTo(2))
 
@@ -83,9 +83,9 @@ class NotificationManagerExtensionsSpec {
 
         manager.putInstanceContextSwitchNotification(context, task, instance)
 
-        assertThat(notification.captured.extras.get(Notification.EXTRA_TITLE) as String, containsString(task.name))
-        assertThat(notification.captured.extras.get(Notification.EXTRA_TEXT) as String, containsString(task.goal))
-        assertThat(notification.captured.extras.get(Notification.EXTRA_TEXT) as String, containsString(task.description))
+        assertThat(notification.captured.extras.getString(Notification.EXTRA_TITLE), containsString(task.name))
+        assertThat(notification.captured.extras.getString(Notification.EXTRA_TEXT), containsString(task.goal))
+        assertThat(notification.captured.extras.getString(Notification.EXTRA_TEXT), containsString(task.description))
 
         assertThat(notification.captured.actions.size, equalTo(2))
 
@@ -114,7 +114,7 @@ class NotificationManagerExtensionsSpec {
 
         assertThat(id, equalTo(-1))
         assertThat(notification.group, equalTo("eventually.client.scheduling.foreground_service_notification"))
-        assertThat(notification.extras.get(Notification.EXTRA_TITLE) as String, equalTo("test"))
+        assertThat(notification.extras.getString(Notification.EXTRA_TITLE), equalTo("test"))
     }
 
     private val task = Task(

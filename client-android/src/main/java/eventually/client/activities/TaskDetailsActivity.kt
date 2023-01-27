@@ -85,11 +85,12 @@ class TaskDetailsActivity : AppCompatActivity() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
+    @Deprecated("Deprecated")
     override fun onBackPressed() {
         if (isEditingEnabled()) {
             disableEditing()
         } else {
-            super.onBackPressed()
+            onBackPressedDispatcher.onBackPressed()
         }
     }
 
@@ -113,7 +114,7 @@ class TaskDetailsActivity : AppCompatActivity() {
                 }
             }
 
-        tasksWithSchedules.observe(this, { (tasks, schedules) ->
+        tasksWithSchedules.observe(this) { (tasks, schedules) ->
             val task = tasks.firstOrNull { it.id == taskId }
             val schedule = schedules[taskId]
 
@@ -130,7 +131,11 @@ class TaskDetailsActivity : AppCompatActivity() {
             }
 
             topAppBar.setNavigationOnClickListener {
-                onBackPressed()
+                if (isEditingEnabled()) {
+                    disableEditing()
+                } else {
+                    onBackPressedDispatcher.onBackPressed()
+                }
             }
 
             deleteButton.setOnClickListener {
@@ -183,7 +188,8 @@ class TaskDetailsActivity : AppCompatActivity() {
                             notificationManager.deleteInstanceNotifications(task.id, instance)
                             val by = PreferenceManager.getDefaultSharedPreferences(this).getPostponeLength()
                             TaskManagement.postponeTaskInstance(this, task.id, instance, by)
-                            Snackbar.make(view, getString(R.string.snackbar_task_postponed), Snackbar.LENGTH_SHORT).show()
+                            Snackbar.make(view, getString(R.string.snackbar_task_postponed), Snackbar.LENGTH_SHORT)
+                                .show()
                         }
                     },
                     undo = { instant ->
@@ -227,7 +233,7 @@ class TaskDetailsActivity : AppCompatActivity() {
                     }
                 }
             }
-        })
+        }
     }
 
     private fun isEditingEnabled(): Boolean = binding.previewParent.visibility == View.GONE

@@ -53,7 +53,7 @@ class TaskCalendarFragment : Fragment() {
         inflater.inflate(R.layout.fragment_task_calendar, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         val calendar = view.findViewById<CalendarView>(R.id.tasks_calendar)
         calendar.setupCalendar(firstDayOfWeek = preferences.getFirstDayOfWeek().toCalendarDay())

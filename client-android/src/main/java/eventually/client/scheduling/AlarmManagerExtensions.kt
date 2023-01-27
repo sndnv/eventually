@@ -24,7 +24,7 @@ object AlarmManagerExtensions {
             context,
             SchedulerServiceEvaluationRequestCode,
             Intent(context, SchedulerService::class.java).apply { action = SchedulerService.ActionEvaluate },
-            PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
     }
 

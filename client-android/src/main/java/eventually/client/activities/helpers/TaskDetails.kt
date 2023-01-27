@@ -29,9 +29,6 @@ import eventually.client.settings.Settings
 import eventually.client.settings.Settings.getDateTimeFormat
 import eventually.client.settings.Settings.getFirstDayOfWeek
 import eventually.core.model.Task
-import kotlinx.android.synthetic.main.input_schedule_once.view.date
-import kotlinx.android.synthetic.main.input_schedule_once.view.time
-import kotlinx.android.synthetic.main.layout_task_details.view.goal_text_input
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
@@ -101,7 +98,7 @@ object TaskDetails {
 
     private fun AppCompatActivity.initGoal(binding: LayoutTaskDetailsBinding, task: Task?, goals: List<String>) {
         val adapter = ArrayAdapter(this, R.layout.list_item_goal, goals)
-        val input = binding.goal.goal_text_input
+        val input = binding.goalTextInput
         input.setAdapter(adapter)
         task?.let { input.setText(it.goal, false) }
     }
@@ -161,7 +158,7 @@ object TaskDetails {
 
         val now = Instant.now()
 
-        val scheduleOnce: View = binding.scheduleOnce
+        val scheduleOnce: View = binding.scheduleOnce.root
         val scheduleRepeating: View = binding.scheduleRepeating.scheduleRepeatingGrid
 
         val scheduleType: AtomicReference<String> = AtomicReference()
@@ -185,6 +182,7 @@ object TaskDetails {
         when (task?.schedule) {
             is Task.Schedule.Once -> setScheduleOnce()
             is Task.Schedule.Repeating -> setScheduleRepeating()
+            else -> Unit // do nothing
         }
 
         scheduleButton.addOnButtonCheckedListener { _, checkedButton, isChecked ->
