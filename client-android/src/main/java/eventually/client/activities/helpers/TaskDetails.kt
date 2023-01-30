@@ -40,6 +40,7 @@ object TaskDetails {
     fun AppCompatActivity.initTaskDetails(
         binding: LayoutTaskDetailsBinding,
         task: Task?,
+        default: Instant,
         goals: List<String>,
         operation: String
     ): Fields {
@@ -51,7 +52,7 @@ object TaskDetails {
 
         initContextSwitch(binding, task)
 
-        val scheduleType = initSchedule(binding, task)
+        val scheduleType = initSchedule(binding, default, task)
 
         initSectionExpansion(binding, task)
 
@@ -80,7 +81,8 @@ object TaskDetails {
                 if (binding.extraFields.visibility == View.GONE) {
                     binding.extraFields.visibility = View.VISIBLE
                     binding.scheduleRepeating.extraDayPicker.visibility = View.VISIBLE
-                    binding.expandExtraFields.buttonAction.icon = ContextCompat.getDrawable(this, R.drawable.ic_collapse)
+                    binding.expandExtraFields.buttonAction.icon =
+                        ContextCompat.getDrawable(this, R.drawable.ic_collapse)
                     binding.expandExtraFields.buttonAction.tooltipText = getString(R.string.section_collapse_tooltip)
                 } else {
                     binding.extraFields.visibility = View.GONE
@@ -136,7 +138,11 @@ object TaskDetails {
         }
     }
 
-    private fun AppCompatActivity.initSchedule(binding: LayoutTaskDetailsBinding, task: Task?): AtomicReference<String> {
+    private fun AppCompatActivity.initSchedule(
+        binding: LayoutTaskDetailsBinding,
+        default: Instant,
+        task: Task?
+    ): AtomicReference<String> {
         val durationTypesAdapter = ArrayAdapter(
             applicationContext,
             R.layout.dropdown_duration_type_item,
@@ -155,8 +161,6 @@ object TaskDetails {
             (scheduleRepeatingInterval?.second ?: defaultRepeatingScheduleInterval.second).asString(this),
             false
         )
-
-        val now = Instant.now()
 
         val scheduleOnce: View = binding.scheduleOnce.root
         val scheduleRepeating: View = binding.scheduleRepeating.scheduleRepeatingGrid
@@ -194,8 +198,8 @@ object TaskDetails {
             }
         }
 
-        initScheduleOnce(scheduleOnce, now, task)
-        initScheduleRepeating(scheduleRepeating, now, task)
+        initScheduleOnce(scheduleOnce, default, task)
+        initScheduleRepeating(scheduleRepeating, default, task)
 
         if (task == null) {
             setScheduleOnce()
@@ -204,10 +208,11 @@ object TaskDetails {
         return scheduleType
     }
 
-    private fun AppCompatActivity.initScheduleOnce(scheduleOnce: View, now: Instant, task: Task?) {
+    private fun AppCompatActivity.initScheduleOnce(scheduleOnce: View, default: Instant, task: Task?) {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
 
-        val scheduleOnceInstant = (task?.schedule as? Task.Schedule.Once)?.instant ?: (now.plus(Defaults.ScheduleTimeDuration))
+        val scheduleOnceInstant =
+            (task?.schedule as? Task.Schedule.Once)?.instant ?: (default.plus(Defaults.ScheduleTimeDuration))
 
         val scheduleOnceDateButton = scheduleOnce.findViewById<Button>(R.id.date)
         scheduleOnceDateButton.text = scheduleOnceInstant.formatAsDate(this)
@@ -250,12 +255,12 @@ object TaskDetails {
         }
     }
 
-    private fun AppCompatActivity.initScheduleRepeating(scheduleRepeating: View, now: Instant, task: Task?) {
+    private fun AppCompatActivity.initScheduleRepeating(scheduleRepeating: View, default: Instant, task: Task?) {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         val schedule = task?.schedule as? Task.Schedule.Repeating
 
-        val scheduleRepeatingInstant = schedule?.start ?: now.plus(Defaults.ScheduleTimeDuration)
+        val scheduleRepeatingInstant = schedule?.start ?: default.plus(Defaults.ScheduleTimeDuration)
 
         val scheduleRepeatingStartDateButton = scheduleRepeating.findViewById<Button>(R.id.start_date)
         scheduleRepeatingStartDateButton.text = scheduleRepeatingInstant.formatAsDate(this)
@@ -291,7 +296,8 @@ object TaskDetails {
             val timePicker = timePickerBuilder.build()
 
             timePicker.addOnPositiveButtonClickListener {
-                scheduleRepeatingStartTimeButton.text = LocalTime.of(timePicker.hour, timePicker.minute).formatAsTime(this)
+                scheduleRepeatingStartTimeButton.text =
+                    LocalTime.of(timePicker.hour, timePicker.minute).formatAsTime(this)
             }
 
             timePicker.show(supportFragmentManager, timePicker.toString())
@@ -356,9 +362,10 @@ object TaskDetails {
                 else context.getString(R.string.task_details_field_error_context_switch_duration_padding)
 
             val scheduleValid = if (scheduleType.get() == "repeating") {
-                val scheduleRepeatingEveryDurationAmountValid = scheduleRepeatingEveryDurationAmountField.validateDurationAmount {
-                    context.getString(R.string.task_details_field_error_schedule_repeating_duration)
-                }
+                val scheduleRepeatingEveryDurationAmountValid =
+                    scheduleRepeatingEveryDurationAmountField.validateDurationAmount {
+                        context.getString(R.string.task_details_field_error_schedule_repeating_duration)
+                    }
                 scheduleRepeatingEveryDurationTypeField.isErrorEnabled = !scheduleRepeatingEveryDurationAmountValid
                 scheduleRepeatingEveryDurationTypeField.error =
                     if (scheduleRepeatingEveryDurationAmountValid) null
@@ -415,7 +422,8 @@ object TaskDetails {
                     val start = (scheduleRepeatingStartDateButton.text to scheduleRepeatingStartTimeButton.text)
                         .parseAsDateTime(context)
 
-                    val durationType = scheduleRepeatingEveryDurationTypeField.editText?.text.toString().asChronoUnit(context)
+                    val durationType =
+                        scheduleRepeatingEveryDurationTypeField.editText?.text.toString().asChronoUnit(context)
                     val durationAmount = scheduleRepeatingEveryDurationAmountField.editText?.text.toString().toLong()
 
                     val every = Task.Schedule.Repeating.Interval.of(durationAmount, durationType)

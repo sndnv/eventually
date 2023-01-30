@@ -12,12 +12,21 @@ import eventually.client.activities.helpers.TaskDetails.initTaskDetails
 import eventually.client.activities.helpers.TaskManagement
 import eventually.client.databinding.ActivityNewTaskBinding
 import eventually.client.persistence.tasks.TaskViewModel
+import java.time.Instant
 
 class NewTaskActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val taskViewModel = ViewModelProvider(this).get(TaskViewModel::class.java)
+
+        val date = when (val date = intent.extras?.getLong(ExtraDate)) {
+            null -> null
+            else  -> when {
+                date > 0 -> Instant.ofEpochMilli(date)
+                else -> null
+            }
+        }
 
         taskViewModel.goals.observe(this) { goals ->
             taskViewModel.goals.removeObservers(this)
@@ -31,6 +40,7 @@ class NewTaskActivity : AppCompatActivity() {
             val fields = initTaskDetails(
                 binding = binding.details,
                 task = null,
+                default = date ?: Instant.now(),
                 operation = getString(R.string.new_task_action),
                 goals = goals
             )
@@ -50,5 +60,9 @@ class NewTaskActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        const val ExtraDate: String = "eventually.client.activities.NewTaskActivity.extra_date"
     }
 }
