@@ -2,6 +2,7 @@ package eventually.test.core.model
 
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
+import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
 import io.kotest.assertions.fail
 import io.kotest.assertions.throwables.shouldThrow
@@ -49,6 +50,31 @@ class TaskScheduleSpec : WordSpec({
             val instance = updatedSchedule.instances.values.first()
             instance.instant shouldBe (task.schedule.next(after = after, within = within).first())
             instance.postponed shouldBe (null)
+        }
+
+        "support updating scheduling (with expired instances)" {
+            val after = after()
+            val within = Duration.ofMinutes(5)
+
+            val expiredInstance = TaskInstance(
+                instant = Instant.now().minusSeconds(42)
+            )
+
+            val schedule = TaskSchedule(
+                task = task,
+                instances = mapOf(expiredInstance.id to expiredInstance),
+                dismissed = emptyList()
+            )
+
+            schedule.task shouldBe (task)
+            schedule.instances.size shouldBe (1)
+
+            val updatedSchedule = schedule.update(after = after, within = within)
+            updatedSchedule.task shouldBe (task)
+            updatedSchedule.instances.size shouldBe (1)
+
+            val instance = updatedSchedule.instances.values.first()
+            instance shouldBe (expiredInstance)
         }
 
         "not update scheduling if a task is not active" {
@@ -288,8 +314,8 @@ class TaskScheduleSpec : WordSpec({
             schedule.instances shouldBe (emptyMap())
 
             val updatedSchedule = schedule
-                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
                 .update(after = now.minus(Duration.ofMinutes(45)), within = within)
+                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
                 .update(after = now, within = within)
             updatedSchedule.task shouldBe (task)
             updatedSchedule.instances.size shouldBe (3)
@@ -319,8 +345,8 @@ class TaskScheduleSpec : WordSpec({
             schedule.instances shouldBe (emptyMap())
 
             val updatedSchedule = schedule
-                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
                 .update(after = now.minus(Duration.ofMinutes(45)), within = within)
+                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
                 .update(after = now, within = within)
             updatedSchedule.task shouldBe (task)
             updatedSchedule.instances.size shouldBe (3)
@@ -345,8 +371,8 @@ class TaskScheduleSpec : WordSpec({
             schedule.instances shouldBe (emptyMap())
 
             val updatedSchedule = schedule
-                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
                 .update(after = now.minus(Duration.ofMinutes(45)), within = within)
+                .update(after = now.minus(Duration.ofMinutes(25)), within = within)
                 .update(after = now, within = within)
             updatedSchedule.task shouldBe (task)
             updatedSchedule.instances.size shouldBe (3)

@@ -142,7 +142,7 @@
     <string name="task_preview_field_title_instances_dismissed">Dismissed</string>
 
     <string name="task_preview_field_content_inactive">(disabled)</string>
-    <string name="task_preview_field_content_context_switch">%d %s</string>
+    <string name="task_preview_field_content_context_switch">%1$d %2$s</string>
     <string name="task_preview_field_content_schedule_once">On %1$s at %2$s</string>
     <string name="task_preview_field_content_schedule_repeating_every_day">Starting from %1$s at %2$s\nEvery %3$s %4$s</string>
     <string name="task_preview_field_content_schedule_repeating_on_days">Starting from %1$s at %2$s\nEvery %3$s %4$s\nOnly on %5$s</string>

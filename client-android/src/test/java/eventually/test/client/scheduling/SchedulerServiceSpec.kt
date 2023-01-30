@@ -312,7 +312,7 @@ class SchedulerServiceSpec {
     )
 
     private val instance = TaskInstance(
-        instant = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        instant = Instant.now().plusSeconds(20).truncatedTo(ChronoUnit.MILLIS)
     )
 
     private val postponeBy = Duration.ofMinutes(5)

@@ -11,7 +11,18 @@ data class TaskInstance(
 ) {
     fun execution(): Instant = instant.plus(postponed ?: Duration.ZERO)
 
-    fun postponed(by: Duration) = copy(postponed = (postponed ?: Duration.ZERO) + by)
+    fun postponed(by: Duration): TaskInstance {
+        val now = Instant.now()
+
+        return if (execution().isBefore(now)) {
+            copy(
+                instant = Instant.now(),
+                postponed = by
+            )
+        } else {
+            copy(postponed = (postponed ?: Duration.ZERO) + by)
+        }
+    }
 
     companion object {
         operator fun invoke(instant: Instant): TaskInstance = TaskInstance(
