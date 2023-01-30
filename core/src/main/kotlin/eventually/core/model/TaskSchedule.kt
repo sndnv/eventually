@@ -18,6 +18,7 @@ data class TaskSchedule(
             return nextInstants
         }
 
+        val latestInstance = instances.values.maxByOrNull { it.instant }
         var nextInstants = requireNextInstants(after)
 
         return if (task.isActive) {
@@ -26,7 +27,9 @@ data class TaskSchedule(
                 val last = nextInstants.last()
 
                 val filtered = nextInstants.filter { next ->
-                    !dismissed.contains(next) && instances.values.none { it.instant == next }
+                    !dismissed.contains(next)
+                            && instances.values.none { it.instant == next }
+                            && latestInstance?.let { next.isAfter(it.instant) } ?: true
                 }
 
                 if (task.schedule is Task.Schedule.Repeating && instances.isEmpty() && filtered.isEmpty()) {
@@ -39,8 +42,7 @@ data class TaskSchedule(
 
             val nextInstances = collected
                 .map { TaskInstance(instant = it) }
-                .map { it.id to it }
-                .toMap()
+                .associateBy { it.id }
 
             copy(
                 instances = instances + nextInstances
