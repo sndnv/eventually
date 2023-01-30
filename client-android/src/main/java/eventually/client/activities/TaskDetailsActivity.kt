@@ -38,6 +38,7 @@ import eventually.client.serialization.Extras.requireTaskId
 import eventually.client.settings.Settings.getPostponeLength
 import eventually.core.model.Task
 import eventually.core.model.TaskSchedule
+import java.time.Instant
 
 class TaskDetailsActivity : AppCompatActivity() {
 
@@ -211,6 +212,7 @@ class TaskDetailsActivity : AppCompatActivity() {
             initTaskDetails(
                 binding = binding.details,
                 task = task,
+                default = Instant.now(),
                 goals = tasks.map { it.goal },
                 operation = getString(R.string.existing_task_update_action)
             ).let { fields ->

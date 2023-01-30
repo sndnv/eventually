@@ -16,6 +16,7 @@ import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eventually.client.R
+import eventually.client.activities.NewTaskActivity
 import eventually.client.activities.TaskDetailsActivity
 import eventually.client.activities.helpers.Common.StyledString
 import eventually.client.activities.helpers.Common.renderAsSpannable
@@ -71,7 +72,12 @@ class TaskCalendarFragment : Fragment() {
                                 R.string.calendar_dialog_title,
                                 date.date.toInstant().formatAsDate(context)
                             )
-                        )
+                        ).setPositiveButton(R.string.new_task_subtitle) { _, _ ->
+                            startActivity(
+                                Intent(activity, NewTaskActivity::class.java)
+                                    .putExtra(NewTaskActivity.ExtraDate, date.timeInMillis)
+                            )
+                        }
                         .setItems(
                             items.map {
                                 context.getString(R.string.calendar_dialog_item_text)
@@ -103,6 +109,11 @@ class TaskCalendarFragment : Fragment() {
                         }
                         .show()
                 }
+            } else {
+                startActivity(
+                    Intent(activity, NewTaskActivity::class.java)
+                        .putExtra(NewTaskActivity.ExtraDate, date.timeInMillis)
+                )
             }
         }
     }
