@@ -26,6 +26,10 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.7.1")
     implementation("ru.cleverpumpkin:crunchycalendar:2.0.0")
     implementation("ca.antonious:materialdaypicker:0.7.4")
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
 
     kapt("androidx.room:room-compiler:2.5.0")
 
