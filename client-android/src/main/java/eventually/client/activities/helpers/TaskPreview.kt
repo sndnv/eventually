@@ -33,6 +33,10 @@ import eventually.client.settings.Settings.getShowAllInstances
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
+import io.noties.markwon.Markwon
+import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
+import io.noties.markwon.ext.tables.TablePlugin
+import io.noties.markwon.ext.tasklist.TaskListPlugin
 import java.time.Instant
 import java.util.UUID
 
@@ -46,6 +50,20 @@ object TaskPreview {
         val preferences = PreferenceManager.getDefaultSharedPreferences(this)
 
         binding.task = task
+
+        val description = findViewById<TextView>(R.id.preview_description)
+
+        if (task != null && task.description.isNotBlank()) {
+            val markdown = Markwon.builder(this)
+                .usePlugin(TablePlugin.create(this))
+                .usePlugin(TaskListPlugin.create(this))
+                .usePlugin(StrikethroughPlugin.create())
+                .build()
+
+            markdown.setMarkdown(description, task.description)
+        } else {
+            description.text = "-"
+        }
 
         val contextSwitch = task?.contextSwitch?.toFields()
         binding.previewContextSwitch.text = getString(
