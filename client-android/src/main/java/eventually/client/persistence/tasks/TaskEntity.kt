@@ -14,5 +14,6 @@ data class TaskEntity(
     val goal: String,
     val schedule: Task.Schedule,
     val contextSwitch: Duration,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val color: Int?
 )

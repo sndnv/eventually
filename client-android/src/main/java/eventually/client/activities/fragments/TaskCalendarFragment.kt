@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.graphics.Typeface
 import android.os.Bundle
 import android.os.IBinder
+import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
@@ -84,16 +85,21 @@ class TaskCalendarFragment : Fragment() {
                                     .renderAsSpannable(
                                         StyledString(
                                             placeholder = "%1\$s",
+                                            content = "●",
+                                            style = ForegroundColorSpan(it.color)
+                                        ),
+                                        StyledString(
+                                            placeholder = "%2\$s",
                                             content = it.instance.execution().formatAsTime(context),
                                             style = StyleSpan(Typeface.BOLD)
                                         ),
                                         StyledString(
-                                            placeholder = "%2\$s",
+                                            placeholder = "%3\$s",
                                             content = it.task.name,
                                             style = StyleSpan(Typeface.NORMAL)
                                         ),
                                         StyledString(
-                                            placeholder = "%3\$s",
+                                            placeholder = "%4\$s",
                                             content = it.task.goal,
                                             style = StyleSpan(Typeface.ITALIC)
                                         )
@@ -150,7 +156,7 @@ class TaskCalendarFragment : Fragment() {
         val task: Task,
         val instance: TaskInstance
     ) : CalendarView.DateIndicator {
-        override val color: Int = context.getColor(R.color.calendar_event)
+        override val color: Int = task.color ?: context.getColor(R.color.calendar_event)
 
         override val date: CalendarDate = CalendarDate(Date.from(instance.execution()))
     }

@@ -230,6 +230,24 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/color"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:text="@string/task_details_field_title_color"
+                        app:chipBackgroundColor="@android:color/transparent"
+                        app:chipIcon="@drawable/ic_circle"
+                        app:chipStrokeColor="@color/input_stroke"
+                        app:chipStrokeWidth="1dp" />
+                </LinearLayout>
             </LinearLayout>
 
             <include

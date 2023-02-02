@@ -94,7 +94,8 @@ class Converters {
             goal = task.goal,
             schedule = task.schedule,
             contextSwitch = task.contextSwitch,
-            isActive = task.isActive
+            isActive = task.isActive,
+            color = task.color
         )
 
         fun entityToTask(entity: TaskEntity) = Task(
@@ -104,7 +105,8 @@ class Converters {
             goal = entity.goal,
             schedule = entity.schedule,
             contextSwitch = entity.contextSwitch,
-            isActive = entity.isActive
+            isActive = entity.isActive,
+            color = entity.color
         )
 
         fun taskToString(task: Task): String =
@@ -197,6 +199,7 @@ class Converters {
             json.add("schedule", scheduleToJson(task.schedule))
             json.addProperty("context_switch", task.contextSwitch.seconds)
             json.addProperty("is_active", task.isActive)
+            json.addProperty("color", task.color)
 
             return json
         }
@@ -209,7 +212,8 @@ class Converters {
                 goal = task.get("goal").asString,
                 schedule = jsonToSchedule(task.get("schedule").asJsonObject),
                 contextSwitch = Duration.ofSeconds(task.get("context_switch").asLong),
-                isActive = task.get("is_active").asBoolean
+                isActive = task.get("is_active").asBoolean,
+                color = task.get("color")?.asInt
             )
         }
 

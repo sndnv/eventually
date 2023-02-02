@@ -93,7 +93,7 @@
 
     <!-- Calendar -->
     <string name="calendar_dialog_title">%s</string>
-    <string name="calendar_dialog_item_text">%1$s - %2$s (%3$s)</string>
+    <string name="calendar_dialog_item_text">%1$s %2$s - %3$s (%$s)</string>
 
     <!--  Task List -->
     <string name="task_list_empty_text">No Tasks</string>
@@ -106,6 +106,7 @@
     <string name="task_details_field_title_goal">Category (required)</string>
     <string name="task_details_field_title_goal_hint">Goal, category or group for the task</string>
     <string name="task_details_field_title_context_switch">Context Switch (required)</string>
+    <string name="task_details_field_title_color">Calendar Event Color</string>
     <string name="task_details_field_title_is_active">Enabled</string>
     <string name="task_details_field_title_schedule">Schedule</string>
     <string name="task_details_field_title_schedule_once">Once</string>
@@ -127,6 +128,8 @@
     <string name="task_details_field_help_content_context_switch">
         A context switch is a notification created before a task\'s next alarm is due.
     </string>
+
+    <string name="task_details_color_reset">Reset</string>
 
     <!-- Task Preview -->
     <string name="task_preview_button_text_dismiss">Dismiss</string>

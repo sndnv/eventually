@@ -22,7 +22,8 @@ class SchedulerOpsSpec : WordSpec({
             goal = "test-goal",
             schedule = Task.Schedule.Once(instant = Instant.now().plus(Duration.ofMinutes(3))),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         val config = TaskSummaryConfig(

@@ -47,7 +47,8 @@ class TaskEntityDatabaseSpec {
             every = Duration.ofMinutes(20).toInterval()
         ),
         contextSwitch = Duration.ofMinutes(5),
-        isActive = true
+        isActive = true,
+        color = 1
     )
 
     private fun withDatabase(f: (db: TaskEntityDatabase) -> Unit) {

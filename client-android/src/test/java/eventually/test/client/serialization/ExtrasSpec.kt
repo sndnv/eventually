@@ -45,7 +45,8 @@ class ExtrasSpec {
                 every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         val intent = createIntent().putTask(extra, task)

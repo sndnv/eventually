@@ -103,8 +103,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
             val nextEvaluation =
                 notifications.notifications
                     .filterIsInstance<SchedulerOps.Notification.PutEvaluationAlarm>()
-                    .map { it.instant }
-                    .minOrNull()
+                    .minOfOrNull { it.instant }
 
             this@SchedulerService.providedSchedules.postValue(schedules)
             this@SchedulerService.providedSummary.postValue(summary)
@@ -209,7 +208,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                 }
             }
 
-        tasksWithSchedules.observe(this@SchedulerService, { (tasks, schedules) ->
+        tasksWithSchedules.observe(this@SchedulerService) { (tasks, schedules) ->
             tasksWithSchedules.removeObservers(this@SchedulerService)
 
             handler.obtainMessage().let { msg ->
@@ -221,7 +220,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                 msg.obj = SchedulerOps.Message.Init(tasks, schedulesWithTasks)
                 handler.sendMessage(msg)
             }
-        })
+        }
     }
 
     inner class SchedulerBinder : Binder() {
@@ -237,15 +236,19 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
         const val ActionDismiss: String = "eventually.client.scheduling.SchedulerService.Dismiss"
         const val ActionDismissExtraTask: String = "eventually.client.scheduling.SchedulerService.Dismiss.extra_task"
-        const val ActionDismissExtraInstance: String = "eventually.client.scheduling.SchedulerService.Dismiss.extra_instance"
+        const val ActionDismissExtraInstance: String =
+            "eventually.client.scheduling.SchedulerService.Dismiss.extra_instance"
 
         const val ActionUndoDismiss: String = "eventually.client.scheduling.SchedulerService.UndoDismiss"
-        const val ActionUndoDismissExtraTask: String = "eventually.client.scheduling.SchedulerService.UndoDismiss.extra_task"
-        const val ActionUndoDismissExtraInstant: String = "eventually.client.scheduling.SchedulerService.UndoDismiss.extra_instant"
+        const val ActionUndoDismissExtraTask: String =
+            "eventually.client.scheduling.SchedulerService.UndoDismiss.extra_task"
+        const val ActionUndoDismissExtraInstant: String =
+            "eventually.client.scheduling.SchedulerService.UndoDismiss.extra_instant"
 
         const val ActionPostpone: String = "eventually.client.scheduling.SchedulerService.Postpone"
         const val ActionPostponeExtraTask: String = "eventually.client.scheduling.SchedulerService.Postpone.extra_task"
-        const val ActionPostponeExtraInstance: String = "eventually.client.scheduling.SchedulerService.Postpone.extra_instance"
+        const val ActionPostponeExtraInstance: String =
+            "eventually.client.scheduling.SchedulerService.Postpone.extra_instance"
         const val ActionPostponeExtraBy: String = "eventually.client.scheduling.SchedulerService.Postpone.extra_by"
 
         const val ActionEvaluate: String = "eventually.client.scheduling.SchedulerService.Evaluate"

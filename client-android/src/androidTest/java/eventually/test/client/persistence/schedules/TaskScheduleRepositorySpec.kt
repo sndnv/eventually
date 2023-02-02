@@ -91,7 +91,8 @@ class TaskScheduleRepositorySpec {
                 every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         ),
         instances = mapOf(
             instance1.id to instance1,
