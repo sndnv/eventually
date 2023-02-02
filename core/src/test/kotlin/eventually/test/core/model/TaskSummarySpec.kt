@@ -21,7 +21,8 @@ class TaskSummarySpec : WordSpec({
             goal = "test-goal",
             schedule = Task.Schedule.Once(instant = Instant.now()),
             contextSwitch = Duration.ofMinutes(15),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         "support creating empty summary" {

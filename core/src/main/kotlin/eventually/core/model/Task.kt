@@ -16,7 +16,8 @@ data class Task(
     val goal: String,
     val schedule: Schedule,
     val contextSwitch: Duration,
-    val isActive: Boolean
+    val isActive: Boolean,
+    val color: Int?
 ) {
     sealed class Schedule {
         abstract fun next(after: Instant, within: Duration): List<Instant>

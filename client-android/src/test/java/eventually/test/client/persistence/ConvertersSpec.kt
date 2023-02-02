@@ -288,7 +288,8 @@ class ConvertersSpec {
                 days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
             ),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         val converted = Converters.taskToString(original)
@@ -302,7 +303,8 @@ class ConvertersSpec {
                 "goal":"test-goal",
                 "schedule":{"type":"repeating","start":${start.epochSecond},"every":{"unit":"seconds","amount":1200},"days":[4,6,3]},
                 "context_switch":300,
-                "is_active":true
+                "is_active":true,
+                "color":1
             }""".replace("\n", "").replace(" ", "")
             )
         )
@@ -322,7 +324,8 @@ class ConvertersSpec {
                 every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         val entity = TaskEntity(
@@ -332,7 +335,8 @@ class ConvertersSpec {
             goal = task.goal,
             schedule = task.schedule,
             contextSwitch = task.contextSwitch,
-            isActive = task.isActive
+            isActive = task.isActive,
+            color = 1
         )
 
         assertThat(Converters.taskToEntity(task), equalTo(entity))
@@ -351,7 +355,8 @@ class ConvertersSpec {
                 every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         val instant = Instant.now()
@@ -395,7 +400,8 @@ class ConvertersSpec {
                 every = Duration.ofMinutes(20).toInterval()
             ),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         val instance = TaskInstance(instant = Instant.now())
@@ -426,7 +432,8 @@ class ConvertersSpec {
                 days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
             ),
             contextSwitch = Duration.ofMinutes(5),
-            isActive = true
+            isActive = true,
+            color = 1
         )
 
         val instant = Instant.now().truncatedTo(ChronoUnit.SECONDS)

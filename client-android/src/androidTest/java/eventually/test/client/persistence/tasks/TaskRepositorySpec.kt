@@ -94,7 +94,8 @@ class TaskRepositorySpec {
             every = Duration.ofMinutes(20).toInterval()
         ),
         contextSwitch = Duration.ofMinutes(5),
-        isActive = true
+        isActive = true,
+        color = 1
     )
 
     private fun createRepo(): TaskRepository {
@@ -107,7 +108,7 @@ class TaskRepositorySpec {
             override fun goals(): LiveData<List<String>> = data.map { it.map { t -> t.goal }.distinct() }
 
             override suspend fun put(entity: TaskEntity): Long {
-                val id = entities[entity.id]?.id ?: entities.size + 1
+                val id = entities[entity.id]?.id ?: (entities.size + 1)
                 entities[id] = entity.copy(id = id)
                 data.value = entities.toList().map { it.second }
                 return id.toLong()

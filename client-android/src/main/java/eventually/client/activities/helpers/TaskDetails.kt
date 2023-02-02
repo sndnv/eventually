@@ -1,6 +1,7 @@
 package eventually.client.activities.helpers
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
@@ -9,12 +10,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import ca.antonious.materialdaypicker.MaterialDayPicker
+import com.google.android.material.chip.Chip
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
+import com.skydoves.colorpickerview.ColorEnvelope
+import com.skydoves.colorpickerview.ColorPickerDialog
+import com.skydoves.colorpickerview.ColorPickerView
+import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import eventually.client.R
 import eventually.client.activities.helpers.Common.asChronoUnit
 import eventually.client.activities.helpers.Common.asString
@@ -36,6 +42,7 @@ import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 
+
 object TaskDetails {
     fun AppCompatActivity.initTaskDetails(
         binding: LayoutTaskDetailsBinding,
@@ -56,6 +63,8 @@ object TaskDetails {
 
         initSectionExpansion(binding, task)
 
+        val colorPicker = initColorPicker(binding.color, task)
+
         return Fields(
             nameField = binding.name,
             descriptionField = binding.description,
@@ -63,6 +72,7 @@ object TaskDetails {
             contextSwitchDurationTypeField = binding.contextSwitch.durationType,
             contextSwitchDurationAmountField = binding.contextSwitch.durationAmount,
             isActiveField = binding.isActive,
+            colorPickerField = colorPicker,
             scheduleOnceDateButton = binding.scheduleOnce.date,
             scheduleOnceTimeButton = binding.scheduleOnce.time,
             scheduleRepeatingStartTimeButton = binding.scheduleRepeating.startTime,
@@ -309,6 +319,44 @@ object TaskDetails {
         daysPicker.setSelectedDays(days.map { MaterialDayPicker.Weekday.valueOf(it.name) })
     }
 
+    private fun AppCompatActivity.initColorPicker(colorChip: Chip, task: Task?): ColorPickerView {
+        val defaultColor = defaultEventColor()
+
+        val builder = ColorPickerDialog.Builder(this)
+            .setTitle(R.string.task_details_field_title_color)
+            .attachBrightnessSlideBar(true)
+            .attachAlphaSlideBar(false)
+
+        val view = builder.colorPickerView
+
+        builder
+            .setPositiveButton(getString(android.R.string.ok),
+                object : ColorEnvelopeListener {
+                    override fun onColorSelected(envelope: ColorEnvelope?, fromUser: Boolean) {
+                        colorChip.chipIconTint = ColorStateList.valueOf(
+                            envelope?.color ?: defaultColor
+                        )
+                    }
+                })
+            .setNeutralButton(R.string.task_details_color_reset) { dialog, _ ->
+                colorChip.chipIconTint = ColorStateList.valueOf(defaultColor)
+                view.setInitialColor(defaultColor)
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+
+        val dialog = builder.create()
+
+        colorChip.setOnClickListener {
+            dialog.show()
+        }
+
+        colorChip.chipIconTint = ColorStateList.valueOf(task?.color ?: defaultColor)
+        view.setInitialColor(task?.color ?: defaultColor)
+
+        return view
+    }
+
     object Defaults {
         val ContextSwitchDuration: Duration = Duration.of(15, ChronoUnit.MINUTES)
 
@@ -333,6 +381,7 @@ object TaskDetails {
         private val contextSwitchDurationTypeField: TextInputLayout,
         private val contextSwitchDurationAmountField: TextInputLayout,
         private val isActiveField: SwitchMaterial,
+        private val colorPickerField: ColorPickerView,
         private val scheduleOnceDateButton: Button,
         private val scheduleOnceTimeButton: Button,
         private val scheduleRepeatingStartTimeButton: Button,
@@ -386,7 +435,8 @@ object TaskDetails {
             goal = goal,
             schedule = schedule,
             contextSwitch = contextSwitch,
-            isActive = isActive
+            isActive = isActive,
+            color = color
         )
 
         fun toUpdatedTask(task: Int): Task = toNewTask().copy(id = task)
@@ -410,6 +460,13 @@ object TaskDetails {
         val isActive: Boolean
             get() {
                 return isActiveField.isChecked
+            }
+
+        val color: Int?
+            get() {
+                val selected = colorPickerField.color
+                val default = context.defaultEventColor()
+                return if (selected == 0 || selected == default) null else selected
             }
 
         val schedule: Task.Schedule
@@ -467,4 +524,6 @@ object TaskDetails {
 
         return !isInvalid
     }
+
+    private fun Context.defaultEventColor(): Int = getColor(R.color.calendar_event)
 }
