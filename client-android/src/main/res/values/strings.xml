@@ -93,7 +93,7 @@
 
     <!-- Calendar -->
     <string name="calendar_dialog_title">%s</string>
-    <string name="calendar_dialog_item_text">%1$s %2$s - %3$s (%$s)</string>
+    <string name="calendar_dialog_item_text">%1$s %2$s - %3$s (%4$s)</string>
 
     <!--  Task List -->
     <string name="task_list_empty_text">No Tasks</string>
