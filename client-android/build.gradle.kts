@@ -7,7 +7,7 @@ plugins {
 dependencies {
     implementation(project(":core"))
 
-    implementation("com.google.code.gson:gson:2.10")
+    implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.21")
     implementation("androidx.appcompat:appcompat:1.6.0")
     implementation("androidx.coordinatorlayout:coordinatorlayout:1.2.0")
