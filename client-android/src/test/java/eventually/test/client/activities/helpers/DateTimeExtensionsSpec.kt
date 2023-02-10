@@ -7,6 +7,7 @@ import eventually.client.activities.helpers.DateTimeExtensions.formatAsDateTime
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsFullDateTime
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
 import eventually.client.activities.helpers.DateTimeExtensions.isToday
+import eventually.client.activities.helpers.DateTimeExtensions.isTomorrow
 import eventually.client.activities.helpers.DateTimeExtensions.parseAsDate
 import eventually.client.activities.helpers.DateTimeExtensions.parseAsDateTime
 import eventually.client.activities.helpers.DateTimeExtensions.parseAsFullDateTime
@@ -159,6 +160,18 @@ class DateTimeExtensionsSpec {
         assertThat(today.isToday(), equalTo(true))
         assertThat(yesterday.isToday(), equalTo(false))
         assertThat(tomorrow.isToday(), equalTo(false))
+    }
+
+    @Test
+    fun checkIfInstantIsTomorrow() {
+        val today = ZonedDateTime.now().withZoneSameLocal(ZoneId.systemDefault()).toInstant()
+        val yesterday = today.minus(1, ChronoUnit.DAYS)
+        val tomorrow = today.plus(1, ChronoUnit.DAYS)
+
+        assertThat(instant.isTomorrow(), equalTo(false))
+        assertThat(today.isTomorrow(), equalTo(false))
+        assertThat(yesterday.isTomorrow(), equalTo(false))
+        assertThat(tomorrow.isTomorrow(), equalTo(true))
     }
 
     private val context: Context = ApplicationProvider.getApplicationContext()

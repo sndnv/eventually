@@ -64,6 +64,11 @@
     <string name="summary_item_instant">%1$s at %2$s</string>
     <string name="summary_item_instant_today">%s</string>
 
+    <!-- Summary / Timeline -->
+    <string name="summary_timeline_title">Show Timeline</string>
+    <string name="summary_timeline_dialog_title">Timeline - Today and Tomorrow</string>
+    <string name="summary_timeline_dialog_item_text">%1$s - %2$s (%3$s)</string>
+
     <!-- Summary / Expired -->
     <string name="summary_expired_overview_title">Overdue</string>
     <string name="summary_expired_dialog_title">Overdue</string>

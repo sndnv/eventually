@@ -86,6 +86,9 @@ object DateTimeExtensions {
     fun Instant.isToday(): Boolean =
         sameDay(this.atZone(ZoneId.systemDefault()), ZonedDateTime.now())
 
+    fun Instant.isTomorrow(): Boolean =
+        sameDay(this.atZone(ZoneId.systemDefault()), ZonedDateTime.now().plusDays(1))
+
     private const val IsoDateOnlyPattern: String = "yyyy-MM-dd"
     private const val IsoTimeOnlyPattern: String = "HH:mm"
     private const val IsoDateTimePattern: String = "yyyy-MM-dd HH:mm"
