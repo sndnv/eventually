@@ -13,8 +13,11 @@ import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager
 import com.google.android.material.card.MaterialCardView
@@ -28,11 +31,13 @@ import eventually.client.activities.helpers.Common.toFields
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsDateTime
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
 import eventually.client.activities.helpers.DateTimeExtensions.isToday
+import eventually.client.activities.helpers.DateTimeExtensions.isTomorrow
 import eventually.client.scheduling.SchedulerService
 import eventually.client.settings.Settings.getSummaryMaxTasks
 import eventually.client.settings.Settings.getSummarySize
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
+import eventually.core.model.TaskSchedule
 import eventually.core.model.TaskSummary
 import java.time.Instant
 
@@ -46,7 +51,24 @@ class TaskSummaryFragment : Fragment() {
             this@TaskSummaryFragment.service = binder.service
             this@TaskSummaryFragment.serviceConnected = true
 
-            binder.service.summary.observe(viewLifecycleOwner, Observer(::updateView))
+            val summaryWithSchedules: LiveData<Pair<TaskSummary, Map<Int, TaskSchedule>>> =
+                object : MediatorLiveData<Pair<TaskSummary, Map<Int, TaskSchedule>>>() {
+                    var summary: TaskSummary? = null
+                    var schedules: Map<Int, TaskSchedule>? = null
+
+                    init {
+                        addSource(binder.service.summary) { summary ->
+                            this.summary = summary
+                            this.schedules?.let { value = summary to it }
+                        }
+                        addSource(binder.service.schedules) { schedules ->
+                            this.schedules = schedules
+                            this.summary?.let { value = it to schedules }
+                        }
+                    }
+                }
+
+            summaryWithSchedules.observe(viewLifecycleOwner, Observer(::updateView))
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -68,7 +90,9 @@ class TaskSummaryFragment : Fragment() {
         activity?.unbindService(serviceConnection)
     }
 
-    private fun updateView(summary: TaskSummary) {
+    private fun updateView(data: Pair<TaskSummary, Map<Int, TaskSchedule>>) {
+        val (summary, schedules) = data
+
         val context = requireContext()
 
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
@@ -152,14 +176,15 @@ class TaskSummaryFragment : Fragment() {
                         )
                 )
             } else {
-                val tasks = resources.getQuantityString(R.plurals.summary_upcoming_footer_non_empty_tasks, upcoming.size)
-                    .renderAsSpannable(
-                        StyledString(
-                            placeholder = "%1\$s",
-                            content = upcoming.size.toString(),
-                            style = StyleSpan(Typeface.BOLD)
+                val tasks =
+                    resources.getQuantityString(R.plurals.summary_upcoming_footer_non_empty_tasks, upcoming.size)
+                        .renderAsSpannable(
+                            StyledString(
+                                placeholder = "%1\$s",
+                                content = upcoming.size.toString(),
+                                style = StyleSpan(Typeface.BOLD)
+                            )
                         )
-                    )
 
                 val period = resources.getQuantityString(R.plurals.summary_upcoming_footer_non_empty_period, amount)
                     .renderAsSpannable(
@@ -300,6 +325,63 @@ class TaskSummaryFragment : Fragment() {
                     }
                     .show()
             }
+        }
+
+        view?.findViewById<Button>(R.id.summary_timeline)?.setOnClickListener {
+            val timelineToday = schedules.values.flatMap { schedule ->
+                schedule.instances.values.mapNotNull { instance ->
+                    if (instance.instant.isToday()) {
+                        schedule.task to instance
+                    } else {
+                        null
+                    }
+                }
+            }
+
+            val timelineTomorrow = schedules.values.flatMap { schedule ->
+                schedule.instances.values.mapNotNull { instance ->
+                    if (instance.instant.isTomorrow()) {
+                        schedule.task to instance
+                    } else {
+                        null
+                    }
+                }
+            }
+
+            val timeline = (timelineToday + timelineTomorrow).sortedBy { it.second.instant }
+
+            MaterialAlertDialogBuilder(context)
+                .setTitle(getString(R.string.summary_timeline_dialog_title))
+                .setItems(
+                    timeline.map {
+                        getString(R.string.summary_timeline_dialog_item_text)
+                            .renderAsSpannable(
+                                StyledString(
+                                    placeholder = "%1\$s",
+                                    content = renderInstant(it.second.execution()),
+                                    style = StyleSpan(Typeface.BOLD)
+                                ),
+                                StyledString(
+                                    placeholder = "%2\$s",
+                                    content = it.first.name,
+                                    style = StyleSpan(Typeface.NORMAL)
+                                ),
+                                StyledString(
+                                    placeholder = "%3\$s",
+                                    content = it.first.goal,
+                                    style = StyleSpan(Typeface.ITALIC)
+                                )
+                            )
+                    }.toTypedArray()
+                ) { _, which ->
+                    val intent = Intent(context, TaskDetailsActivity::class.java).apply {
+                        val taskId = timeline[which].first.id
+                        putExtra(TaskDetailsActivity.ExtraTask, taskId)
+                    }
+
+                    startActivity(intent)
+                }
+                .show()
         }
     }
 }
