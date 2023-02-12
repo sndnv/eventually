@@ -63,7 +63,7 @@ android {
 
         applicationId = "eventually.client"
         versionCode = 3
-        versionName = "1.1.0-SNAPSHOT"
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
