@@ -17,15 +17,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.time.DayOfWeek
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.Period
-import java.time.ZoneOffset
+import java.time.*
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.util.*
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Config.OLDEST_SDK])
@@ -61,23 +55,23 @@ class ConvertersSpec {
         val convertedPeriodDays = converters.intervalToString(originalPeriodDays)
 
         assertThat(
-            convertedDuration,
-            equalTo("""{"unit":"seconds","amount":$durationSeconds}""")
+                convertedDuration,
+                equalTo("""{"unit":"seconds","amount":$durationSeconds}""")
         )
 
         assertThat(
-            convertedPeriodYears,
-            equalTo("""{"unit":"years","amount":$periodYears}""")
+                convertedPeriodYears,
+                equalTo("""{"unit":"years","amount":$periodYears}""")
         )
 
         assertThat(
-            convertedPeriodMonths,
-            equalTo("""{"unit":"months","amount":$periodMonths}""")
+                convertedPeriodMonths,
+                equalTo("""{"unit":"months","amount":$periodMonths}""")
         )
 
         assertThat(
-            convertedPeriodDays,
-            equalTo("""{"unit":"days","amount":$periodDays}""")
+                convertedPeriodDays,
+                equalTo("""{"unit":"days","amount":$periodDays}""")
         )
 
         assertThat(converters.stringToInterval(convertedDuration), equalTo(originalDuration))
@@ -134,32 +128,32 @@ class ConvertersSpec {
         val durationSeconds = 42L
 
         val originalOnce = Task.Schedule.Once(
-            instant = Instant.ofEpochSecond(instantSeconds)
+                instant = Instant.ofEpochSecond(instantSeconds)
         )
 
         val originalRepeating = Task.Schedule.Repeating(
-            start = Instant.ofEpochSecond(startSeconds),
-            every = Duration.ofSeconds(durationSeconds).toInterval()
+                start = Instant.ofEpochSecond(startSeconds),
+                every = Duration.ofSeconds(durationSeconds).toInterval()
         )
 
         val convertedOnce = converters.scheduleToString(originalOnce)
         val convertedRepeating = converters.scheduleToString(originalRepeating)
 
         assertThat(
-            convertedOnce,
-            equalTo("""{"type":"once","instant":$instantSeconds}""")
+                convertedOnce,
+                equalTo("""{"type":"once","instant":$instantSeconds}""")
         )
 
         assertThat(
-            convertedRepeating,
-            equalTo(
-                """{
+                convertedRepeating,
+                equalTo(
+                        """{
                     "type":"repeating",
                     "start":$startSeconds,
                     "every":{"unit":"seconds","amount":$durationSeconds},
                     "days":[1,2,3,4,5,6,7]
                     }""".trimMargin().replace("\n", "").replace(" ", "")
-            )
+                )
         )
 
         assertThat(converters.stringToSchedule(convertedOnce), equalTo(originalOnce))
@@ -242,16 +236,16 @@ class ConvertersSpec {
         val instance3 = TaskInstance(instant = instant.minusSeconds(42))
 
         val original = mapOf(
-            instance1.id to instance1,
-            instance2.id to instance2,
-            instance3.id to instance3
+                instance1.id to instance1,
+                instance2.id to instance2,
+                instance3.id to instance3
         )
         val converted = converters.scheduleInstancesToString(original)
 
         val convertedInstances = listOf(
-            """"${instance1.id}":{"id":"${instance1.id}","instant":${instance1.instant.epochSecond}}""",
-            """"${instance2.id}":{"id":"${instance2.id}","instant":${instance2.instant.epochSecond},"postponed":${instance2.postponed?.seconds}}""",
-            """"${instance3.id}":{"id":"${instance3.id}","instant":${instance3.instant.epochSecond}}"""
+                """"${instance1.id}":{"id":"${instance1.id}","instant":${instance1.instant.epochSecond}}""",
+                """"${instance2.id}":{"id":"${instance2.id}","instant":${instance2.instant.epochSecond},"postponed":${instance2.postponed?.seconds}}""",
+                """"${instance3.id}":{"id":"${instance3.id}","instant":${instance3.instant.epochSecond}}"""
         ).joinToString(separator = ",")
 
         assertThat(converted, equalTo("{${convertedInstances}}"))
@@ -278,24 +272,24 @@ class ConvertersSpec {
         val start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
 
         val original = Task(
-            id = 42,
-            name = "test-task",
-            description = "test-description",
-            goal = "test-goal",
-            schedule = Task.Schedule.Repeating(
-                start = start,
-                every = Duration.ofMinutes(20).toInterval(),
-                days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
-            ),
-            contextSwitch = Duration.ofMinutes(5),
-            isActive = true,
-            color = 1
+                id = 42,
+                name = "test-task",
+                description = "test-description",
+                goal = "test-goal",
+                schedule = Task.Schedule.Repeating(
+                        start = start,
+                        every = Duration.ofMinutes(20).toInterval(),
+                        days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
+                ),
+                contextSwitch = Duration.ofMinutes(5),
+                isActive = true,
+                color = 1
         )
 
         val converted = Converters.taskToString(original)
 
         assertThat(
-            converted, equalTo(
+                converted, equalTo(
                 """{
                 "id":42,
                 "name":"test-task",
@@ -306,7 +300,7 @@ class ConvertersSpec {
                 "is_active":true,
                 "color":1
             }""".replace("\n", "").replace(" ", "")
-            )
+        )
         )
 
         assertThat(Converters.stringToTask(converted), equalTo(original))
@@ -315,28 +309,28 @@ class ConvertersSpec {
     @Test
     fun convertTasksToEntities() {
         val task = Task(
-            id = 42,
-            name = "test-task",
-            description = "test-description",
-            goal = "test-goal",
-            schedule = Task.Schedule.Repeating(
-                start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20).toInterval()
-            ),
-            contextSwitch = Duration.ofMinutes(5),
-            isActive = true,
-            color = 1
+                id = 42,
+                name = "test-task",
+                description = "test-description",
+                goal = "test-goal",
+                schedule = Task.Schedule.Repeating(
+                        start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
+                        every = Duration.ofMinutes(20).toInterval()
+                ),
+                contextSwitch = Duration.ofMinutes(5),
+                isActive = true,
+                color = 1
         )
 
         val entity = TaskEntity(
-            id = task.id,
-            name = task.name,
-            description = task.description,
-            goal = task.goal,
-            schedule = task.schedule,
-            contextSwitch = task.contextSwitch,
-            isActive = task.isActive,
-            color = 1
+                id = task.id,
+                name = task.name,
+                description = task.description,
+                goal = task.goal,
+                schedule = task.schedule,
+                contextSwitch = task.contextSwitch,
+                isActive = task.isActive,
+                color = 1
         )
 
         assertThat(Converters.taskToEntity(task), equalTo(entity))
@@ -346,17 +340,17 @@ class ConvertersSpec {
     @Test
     fun convertTaskSchedulesToEntities() {
         val task = Task(
-            id = 42,
-            name = "test-task",
-            description = "test-description",
-            goal = "test-goal",
-            schedule = Task.Schedule.Repeating(
-                start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20).toInterval()
-            ),
-            contextSwitch = Duration.ofMinutes(5),
-            isActive = true,
-            color = 1
+                id = 42,
+                name = "test-task",
+                description = "test-description",
+                goal = "test-goal",
+                schedule = Task.Schedule.Repeating(
+                        start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
+                        every = Duration.ofMinutes(20).toInterval()
+                ),
+                contextSwitch = Duration.ofMinutes(5),
+                isActive = true,
+                color = 1
         )
 
         val instant = Instant.now()
@@ -365,23 +359,23 @@ class ConvertersSpec {
         val instance3 = TaskInstance(instant = instant.minusSeconds(42))
 
         val instances = mapOf(
-            instance1.id to instance1,
-            instance2.id to instance2,
-            instance3.id to instance3
+                instance1.id to instance1,
+                instance2.id to instance2,
+                instance3.id to instance3
         )
 
         val dismissed = listOf(instant, instant.plusSeconds(21), instant.minusSeconds(21))
 
         val schedule = TaskSchedule(
-            task = task,
-            instances = instances,
-            dismissed = dismissed
+                task = task,
+                instances = instances,
+                dismissed = dismissed
         )
 
         val entity = TaskScheduleEntity(
-            task = task.id,
-            instances = instances,
-            dismissed = dismissed
+                task = task.id,
+                instances = instances,
+                dismissed = dismissed
         )
 
         assertThat(Converters.scheduleToEntity(schedule), equalTo(entity))
@@ -391,27 +385,27 @@ class ConvertersSpec {
     @Test
     fun convertTaskAndInstancesToNotificationEntities() {
         val task = Task(
-            id = 42,
-            name = "test-task",
-            description = "test-description",
-            goal = "test-goal",
-            schedule = Task.Schedule.Repeating(
-                start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
-                every = Duration.ofMinutes(20).toInterval()
-            ),
-            contextSwitch = Duration.ofMinutes(5),
-            isActive = true,
-            color = 1
+                id = 42,
+                name = "test-task",
+                description = "test-description",
+                goal = "test-goal",
+                schedule = Task.Schedule.Repeating(
+                        start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
+                        every = Duration.ofMinutes(20).toInterval()
+                ),
+                contextSwitch = Duration.ofMinutes(5),
+                isActive = true,
+                color = 1
         )
 
         val instance = TaskInstance(instant = Instant.now())
 
         val entity = NotificationEntity(
-            id = 0,
-            task = task.id,
-            instance = instance.id,
-            type = "execution",
-            hash = instance.hashCode()
+                id = 0,
+                task = task.id,
+                instance = instance.id,
+                type = "execution",
+                hash = instance.hashCode()
         )
 
         assertThat(Converters.notificationToEntity(task, instance, "execution"), equalTo(entity))
@@ -422,18 +416,18 @@ class ConvertersSpec {
         val start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
 
         val task = Task(
-            id = 42,
-            name = "test-task",
-            description = "test-description",
-            goal = "test-goal",
-            schedule = Task.Schedule.Repeating(
-                start = start,
-                every = Duration.ofMinutes(20).toInterval(),
-                days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
-            ),
-            contextSwitch = Duration.ofMinutes(5),
-            isActive = true,
-            color = 1
+                id = 42,
+                name = "test-task",
+                description = "test-description",
+                goal = "test-goal",
+                schedule = Task.Schedule.Repeating(
+                        start = start,
+                        every = Duration.ofMinutes(20).toInterval(),
+                        days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
+                ),
+                contextSwitch = Duration.ofMinutes(5),
+                isActive = true,
+                color = 1
         )
 
         val instant = Instant.now().truncatedTo(ChronoUnit.SECONDS)
@@ -442,31 +436,31 @@ class ConvertersSpec {
         val instance3 = TaskInstance(instant = instant.minusSeconds(42))
 
         val instances = mapOf(
-            instance1.id to instance1,
-            instance2.id to instance2,
-            instance3.id to instance3
+                instance1.id to instance1,
+                instance2.id to instance2,
+                instance3.id to instance3
         )
 
         val dismissed = listOf(instant, instant.plusSeconds(21), instant.minusSeconds(21))
 
         val schedule = TaskScheduleEntity(
-            task = task.id,
-            instances = instances,
-            dismissed = dismissed
+                task = task.id,
+                instances = instances,
+                dismissed = dismissed
         )
 
         val notification = NotificationEntity(
-            id = 0,
-            task = task.id,
-            instance = instance1.id,
-            type = "execution",
-            hash = instance1.hashCode()
+                id = 0,
+                task = task.id,
+                instance = instance1.id,
+                type = "execution",
+                hash = instance1.hashCode()
         )
 
         val original = DataExport(
-            tasks = listOf(task),
-            schedules = listOf(schedule),
-            notifications = listOf(notification)
+                tasks = listOf(task),
+                schedules = listOf(schedule),
+                notifications = listOf(notification)
         )
 
         val converted = Converters.dataExportToString(original)
@@ -476,5 +470,72 @@ class ConvertersSpec {
         assertThat(converted, containsString(""""notifications":[{"id":0,"task":42"""))
 
         assertThat(Converters.stringToDataExport(converted), equalTo(original))
+    }
+
+    @Test
+    fun convertLegacyDataExportsV1toV2() {
+        val start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
+
+        val task1 = """
+            {
+                "id":42,
+                "name":"test-task",
+                "description":"test-description",
+                "goal":"test-goal",
+                "schedule":{"type":"repeating","start":${start.epochSecond},"every":{"unit":"seconds","amount":1200},"days":[4,6,3]},
+                "context_switch":300,
+                "is_active":true
+            }
+        """.trimMargin().replace("\n", "").replace(" ", "")
+
+        val task2 = """
+            {
+                "id":43,
+                "name":"test-task",
+                "description":"test-description",
+                "goal":"test-goal",
+                "schedule":{"type":"repeating","start":${start.epochSecond},"every":{"unit":"seconds","amount":1200},"days":[4,6,3]},
+                "context_switch":300,
+                "is_active":false
+            }
+        """.trimMargin().replace("\n", "").replace(" ", "")
+
+        val export = """{"tasks":[$task1,$task2],"schedules":[],"notifications":[]}"""
+
+        val expected = DataExport(
+                tasks = listOf(
+                        Task(
+                                id = 42,
+                                name = "test-task",
+                                description = "test-description",
+                                goal = "test-goal",
+                                schedule = Task.Schedule.Repeating(
+                                        start = start,
+                                        every = Duration.ofMinutes(20).toInterval(),
+                                        days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
+                                ),
+                                contextSwitch = Duration.ofMinutes(5),
+                                isActive = true,
+                                color = null
+                        ), Task(
+                        id = 43,
+                        name = "test-task",
+                        description = "test-description",
+                        goal = "test-goal",
+                        schedule = Task.Schedule.Repeating(
+                                start = start,
+                                every = Duration.ofMinutes(20).toInterval(),
+                                days = setOf(DayOfWeek.THURSDAY, DayOfWeek.SATURDAY, DayOfWeek.WEDNESDAY)
+                        ),
+                        contextSwitch = Duration.ofMinutes(5),
+                        isActive = false,
+                        color = null
+                )
+                ),
+                schedules = emptyList(),
+                notifications = emptyList()
+        )
+
+        assertThat(Converters.stringToDataExport(export), equalTo(expected))
     }
 }
