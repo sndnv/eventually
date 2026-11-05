@@ -11,6 +11,9 @@ interface TaskScheduleEntityDao {
     @Query("SELECT * FROM schedules")
     fun get(): LiveData<List<TaskScheduleEntity>>
 
+    @Query("SELECT * FROM schedules")
+    suspend fun getAll(): List<TaskScheduleEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun put(entity: TaskScheduleEntity)
 

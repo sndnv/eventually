@@ -5,6 +5,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import eventually.client.persistence.tasks.TaskEntityDatabase
+import eventually.client.persistence.tasks.TaskRepository
 import eventually.client.persistence.tasks.TaskViewModel
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
@@ -28,7 +29,7 @@ class TaskViewModelSpec {
         withModel { model ->
             assertThat(model.tasks.await(), equalTo(emptyList()))
 
-            val taskId = runBlocking { model.put(task).await() }
+            val taskId = runBlocking { model.put(task) }
 
             eventually {
                 assertThat(model.tasks.await(), equalTo(listOf(task.copy(id = taskId.toInt()))))
@@ -41,7 +42,7 @@ class TaskViewModelSpec {
         withModel { model ->
             assertThat(model.tasks.await(), equalTo(emptyList()))
 
-            val taskId = runBlocking { model.put(task).await() }
+            val taskId = runBlocking { model.put(task) }
 
             eventually {
                 assertThat(model.tasks.await(), equalTo(listOf(task.copy(id = taskId.toInt()))))
@@ -61,7 +62,7 @@ class TaskViewModelSpec {
         withModel { model ->
             assertThat(model.tasks.await(), equalTo(emptyList()))
 
-            val taskId = runBlocking { model.put(task).await() }
+            val taskId = runBlocking { model.put(task) }
 
             eventually {
                 assertThat(model.tasks.await(), equalTo(listOf(task.copy(id = taskId.toInt()))))
@@ -81,15 +82,15 @@ class TaskViewModelSpec {
             assertThat(model.tasks.await(), equalTo(emptyList()))
 
             runBlocking {
-                model.put(task.copy(goal = "goal-1")).await()
-                model.put(task.copy(goal = "goal-2")).await()
-                model.put(task.copy(goal = "goal-3")).await()
-                model.put(task.copy(goal = "goal-2")).await()
-                model.put(task.copy(goal = "goal-3")).await()
+                model.put(task.copy(goal = "goal-1"))
+                model.put(task.copy(goal = "goal-2"))
+                model.put(task.copy(goal = "goal-3"))
+                model.put(task.copy(goal = "goal-2"))
+                model.put(task.copy(goal = "goal-3"))
             }
 
             assertThat(model.tasks.await().size, equalTo(5))
-            assertThat(model.goals.await().sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
+            assertThat(runBlocking { model.goals() }.sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
         }
     }
 
@@ -112,7 +113,7 @@ class TaskViewModelSpec {
 
     private fun withModel(f: (model: TaskViewModel) -> Unit) {
         val application = ApplicationProvider.getApplicationContext<Application>()
-        val model = TaskViewModel(application)
+        val model = TaskViewModel(TaskRepository(application))
         val db = TaskEntityDatabase.getInstance(application)
 
         try {

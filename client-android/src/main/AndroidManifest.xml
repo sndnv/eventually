@@ -3,9 +3,15 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
+        android:name=".EventuallyApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -15,7 +21,12 @@
 
         <service
             android:name=".scheduling.SchedulerService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="task_reminder_scheduling" />
+        </service>
 
         <receiver
             android:name=".activities.receivers.SystemConfigurationChangedReceiver"
@@ -35,8 +46,17 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".activities.receivers.ExactAlarmPermissionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".activities.NewTaskActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
 
@@ -61,6 +81,7 @@
 
         <activity
             android:name=".activities.TaskDetailsActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
 
@@ -71,6 +92,7 @@
 
         <activity
             android:name=".activities.StatsActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:parentActivityName=".activities.MainActivity"
             android:theme="@style/AppTheme" />
 

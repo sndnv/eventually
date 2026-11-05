@@ -109,7 +109,7 @@ object SchedulerOps {
 
     fun dismiss(schedules: Map<Int, TaskSchedule>, msg: Message.Dismiss): SchedulerResult {
         val schedule = schedules[msg.task]
-        return if (schedule != null) {
+        return if (schedule != null && msg.instance in schedule.instances) {
             val updated = schedules + (msg.task to schedule.dismiss(msg.instance))
 
             val notifications = listOf(Notification.DeleteInstanceNotifications(msg.task, msg.instance))
@@ -119,6 +119,13 @@ object SchedulerOps {
                 notifications = notifications,
                 summary = null,
                 affectedSchedules = listOf(msg.task)
+            )
+        } else if (schedule != null) {
+            SchedulerResult(
+                schedules = schedules,
+                notifications = listOf(Notification.DeleteInstanceNotifications(msg.task, msg.instance)),
+                summary = null,
+                affectedSchedules = emptyList()
             )
         } else {
             SchedulerResult(
@@ -132,7 +139,7 @@ object SchedulerOps {
 
     fun undoDismiss(schedules: Map<Int, TaskSchedule>, msg: Message.UndoDismiss): SchedulerResult {
         val schedule = schedules[msg.task]
-        return if (schedule != null) {
+        return if (schedule != null && msg.instant in schedule.dismissed) {
             val updated = schedules + (msg.task to schedule.undoDismiss(msg.instant))
 
             SchedulerResult(
@@ -153,7 +160,7 @@ object SchedulerOps {
 
     fun postpone(schedules: Map<Int, TaskSchedule>, msg: Message.Postpone): SchedulerResult {
         val schedule = schedules[msg.task]
-        return if (schedule != null) {
+        return if (schedule != null && msg.instance in schedule.instances) {
             val updated = schedules + (msg.task to schedule.postpone(msg.instance, msg.by))
 
             val notifications = listOf(Notification.DeleteInstanceNotifications(msg.task, msg.instance))
@@ -163,6 +170,13 @@ object SchedulerOps {
                 notifications = notifications,
                 summary = null,
                 affectedSchedules = listOf(msg.task)
+            )
+        } else if (schedule != null) {
+            SchedulerResult(
+                schedules = schedules,
+                notifications = listOf(Notification.DeleteInstanceNotifications(msg.task, msg.instance)),
+                summary = null,
+                affectedSchedules = emptyList()
             )
         } else {
             SchedulerResult(

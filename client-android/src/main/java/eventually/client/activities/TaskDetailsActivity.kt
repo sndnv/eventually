@@ -12,13 +12,15 @@ import android.text.style.StyleSpan
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.activity.viewModels
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.ViewModelProvider
 import androidx.preference.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -40,17 +42,24 @@ import eventually.core.model.Task
 import eventually.core.model.TaskSchedule
 import java.time.Instant
 
+@AndroidEntryPoint
 class TaskDetailsActivity : AppCompatActivity() {
 
     private lateinit var service: SchedulerService
     private var serviceConnected: Boolean = false
 
-    private lateinit var taskViewModel: TaskViewModel
+    private val taskViewModel: TaskViewModel by viewModels()
     private lateinit var topAppBar: MaterialToolbar
     private lateinit var binding: ActivityTaskDetailsBinding
     private lateinit var deleteButton: FloatingActionButton
 
     private lateinit var notificationManager: NotificationManager
+
+    private val exitEditingOnBack = object : OnBackPressedCallback(enabled = false) {
+        override fun handleOnBackPressed() {
+            disableEditing()
+        }
+    }
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -80,19 +89,11 @@ class TaskDetailsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        taskViewModel = ViewModelProvider(this).get(TaskViewModel::class.java)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_task_details)
         deleteButton = findViewById(R.id.button_delete)
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    }
 
-    @Deprecated("Deprecated")
-    override fun onBackPressed() {
-        if (isEditingEnabled()) {
-            disableEditing()
-        } else {
-            onBackPressedDispatcher.onBackPressed()
-        }
+        onBackPressedDispatcher.addCallback(this, exitEditingOnBack)
     }
 
     private fun updateView() {
@@ -132,11 +133,7 @@ class TaskDetailsActivity : AppCompatActivity() {
             }
 
             topAppBar.setNavigationOnClickListener {
-                if (isEditingEnabled()) {
-                    disableEditing()
-                } else {
-                    onBackPressedDispatcher.onBackPressed()
-                }
+                onBackPressedDispatcher.onBackPressed()
             }
 
             deleteButton.setOnClickListener {
@@ -209,28 +206,30 @@ class TaskDetailsActivity : AppCompatActivity() {
                 handlers = handlers
             )
 
-            initTaskDetails(
-                binding = binding.details,
-                task = task,
-                default = Instant.now(),
-                goals = tasks.map { it.goal },
-                operation = getString(R.string.existing_task_update_action)
-            ).let { fields ->
-                task?.let {
-                    topAppBar.subtitle = task.name
+            if (!isEditingEnabled()) {
+                initTaskDetails(
+                    binding = binding.details,
+                    task = task,
+                    default = Instant.now(),
+                    goals = tasks.map { it.goal },
+                    operation = getString(R.string.existing_task_update_action)
+                ).let { fields ->
+                    task?.let {
+                        topAppBar.subtitle = task.name
 
-                    val button = findViewById<Button>(R.id.execute_operation)
-                    button.setOnClickListener {
-                        if (fields.validate()) {
-                            TaskManagement.putTask(this@TaskDetailsActivity, fields.toUpdatedTask(task = task.id))
+                        val button = findViewById<Button>(R.id.execute_operation)
+                        button.setOnClickListener {
+                            if (fields.validate()) {
+                                TaskManagement.putTask(this@TaskDetailsActivity, fields.toUpdatedTask(task = task.id))
 
-                            Toast.makeText(
-                                this@TaskDetailsActivity,
-                                getString(R.string.toast_task_updated),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                                Toast.makeText(
+                                    this@TaskDetailsActivity,
+                                    getString(R.string.toast_task_updated),
+                                    Toast.LENGTH_SHORT
+                                ).show()
 
-                            disableEditing()
+                                disableEditing()
+                            }
                         }
                     }
                 }
@@ -245,6 +244,7 @@ class TaskDetailsActivity : AppCompatActivity() {
         deleteButton.isVisible = true
         binding.previewParent.visibility = View.VISIBLE
         binding.detailsParent.visibility = View.GONE
+        exitEditingOnBack.isEnabled = false
     }
 
     private fun enableEditing() {
@@ -252,6 +252,7 @@ class TaskDetailsActivity : AppCompatActivity() {
         deleteButton.isVisible = false
         binding.previewParent.visibility = View.GONE
         binding.detailsParent.visibility = View.VISIBLE
+        exitEditingOnBack.isEnabled = true
     }
 
     companion object {

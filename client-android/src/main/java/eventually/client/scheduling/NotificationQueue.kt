@@ -3,12 +3,12 @@ package eventually.client.scheduling
 import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
-import eventually.client.persistence.notifications.NotificationViewModel
+import eventually.client.persistence.notifications.NotificationRepository
+import eventually.client.scheduling.AlarmManagerExtensions.deleteEvaluationAlarm
+import eventually.client.scheduling.AlarmManagerExtensions.putEvaluationAlarm
 import eventually.client.scheduling.NotificationManagerExtensions.deleteInstanceNotifications
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceContextSwitchNotification
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceExecutionNotification
-import eventually.client.scheduling.AlarmManagerExtensions.deleteEvaluationAlarm
-import eventually.client.scheduling.AlarmManagerExtensions.putEvaluationAlarm
 import eventually.core.scheduling.SchedulerOps
 import java.util.LinkedList
 import java.util.Queue
@@ -22,7 +22,7 @@ class NotificationQueue(
     }
 
     suspend fun distinct(
-        notificationViewModel: NotificationViewModel
+        notificationRepository: NotificationRepository
     ): NotificationQueue {
         val updated = LinkedList<SchedulerOps.Notification>()
         val instances = mutableMapOf<UUID, ExistingNotifications>()
@@ -34,7 +34,7 @@ class NotificationQueue(
                 is SchedulerOps.Notification.DeleteEvaluationAlarm -> updated.offer(it)
 
                 is SchedulerOps.Notification.PutInstanceExecutionNotification -> {
-                    val existing = notificationViewModel.get(it.task.id, it.instance.id, type = "execution").await()
+                    val existing = notificationRepository.get(it.task.id, it.instance.id, type = "execution")
 
                     if (existing == null || existing.hash != it.instance.hashCode()) {
                         instances[it.instance.id] = (instances[it.instance.id] ?: ExistingNotifications()).updated(it)
@@ -42,7 +42,7 @@ class NotificationQueue(
                 }
 
                 is SchedulerOps.Notification.PutInstanceContextSwitchNotification -> {
-                    val existing = notificationViewModel.get(it.task.id, it.instance.id, type = "context").await()
+                    val existing = notificationRepository.get(it.task.id, it.instance.id, type = "context")
 
                     if (existing == null || existing.hash != it.instance.hashCode()) {
                         instances[it.instance.id] = (instances[it.instance.id] ?: ExistingNotifications()).updated(it)
@@ -64,7 +64,7 @@ class NotificationQueue(
         context: Context,
         alarmManager: AlarmManager,
         notificationManager: NotificationManager,
-        notificationViewModel: NotificationViewModel
+        notificationRepository: NotificationRepository
     ): NotificationQueue {
         notifications.forEach {
             when (it) {
@@ -78,17 +78,17 @@ class NotificationQueue(
 
                 is SchedulerOps.Notification.PutInstanceExecutionNotification -> {
                     notificationManager.putInstanceExecutionNotification(context, it.task, it.instance)
-                    notificationViewModel.put(it.task, it.instance, type = "execution").await()
+                    notificationRepository.put(it.task, it.instance, type = "execution")
                 }
 
                 is SchedulerOps.Notification.PutInstanceContextSwitchNotification -> {
                     notificationManager.putInstanceContextSwitchNotification(context, it.task, it.instance)
-                    notificationViewModel.put(it.task, it.instance, type = "context").await()
+                    notificationRepository.put(it.task, it.instance, type = "context")
                 }
 
                 is SchedulerOps.Notification.DeleteInstanceNotifications -> {
                     notificationManager.deleteInstanceNotifications(it.task, it.instance)
-                    notificationViewModel.delete(it.task, it.instance).await()
+                    notificationRepository.delete(it.task, it.instance)
                 }
             }
         }

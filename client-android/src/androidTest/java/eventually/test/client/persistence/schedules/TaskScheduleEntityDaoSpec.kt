@@ -59,6 +59,16 @@ class TaskScheduleEntityDaoSpec {
         }
     }
 
+    @Test
+    fun retrieveAllScheduleEntities() {
+        withDao { dao ->
+            assertThat(runBlocking { dao.getAll() }, equalTo(emptyList()))
+
+            runBlocking { dao.put(entity) }
+            assertThat(runBlocking { dao.getAll() }, equalTo(listOf(entity)))
+        }
+    }
+
     private val instant = Instant.now().truncatedTo(ChronoUnit.SECONDS)
     private val instance1 = TaskInstance(instant = instant)
     private val instance2 = TaskInstance(instant = instant.plusSeconds(42)).copy(postponed = Duration.ofMinutes(5))

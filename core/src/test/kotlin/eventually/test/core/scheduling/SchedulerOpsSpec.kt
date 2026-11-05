@@ -302,6 +302,38 @@ class SchedulerOpsSpec : WordSpec({
             result.affectedSchedules shouldBe (emptyList())
         }
 
+        "only remove notifications when dismissing missing instances" {
+            val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
+
+            val missing = UUID.randomUUID()
+
+            val result =
+                SchedulerOps.dismiss(schedules, SchedulerOps.Message.Dismiss(task.id, instance = missing))
+
+            result.schedules shouldBe (schedules)
+            result.notifications shouldBe (
+                listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, missing))
+            )
+            result.summary shouldBe (null)
+            result.affectedSchedules shouldBe (emptyList())
+        }
+
+        "only remove notifications when dismissing already dismissed instances" {
+            val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
+
+            val instance = schedules.values.first().instances.values.first()
+
+            val dismissed = SchedulerOps.dismiss(schedules, SchedulerOps.Message.Dismiss(task.id, instance.id))
+            val result = SchedulerOps.dismiss(dismissed.schedules, SchedulerOps.Message.Dismiss(task.id, instance.id))
+
+            result.schedules shouldBe (dismissed.schedules)
+            result.notifications shouldBe (
+                listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, instance.id))
+            )
+            result.summary shouldBe (null)
+            result.affectedSchedules shouldBe (emptyList())
+        }
+
         "undo dismissal of tasks" {
             val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
 
@@ -354,6 +386,18 @@ class SchedulerOpsSpec : WordSpec({
             result.affectedSchedules shouldBe (emptyList())
         }
 
+        "do nothing when undoing dismissal of missing instants" {
+            val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
+
+            val result =
+                SchedulerOps.undoDismiss(schedules, SchedulerOps.Message.UndoDismiss(task.id, instant = Instant.EPOCH))
+
+            result.schedules shouldBe (schedules)
+            result.notifications shouldBe (emptyList())
+            result.summary shouldBe (null)
+            result.affectedSchedules shouldBe (emptyList())
+        }
+
         "postpone existing tasks" {
             val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
 
@@ -391,6 +435,24 @@ class SchedulerOpsSpec : WordSpec({
 
             result.schedules shouldBe (emptyMap())
             result.notifications shouldBe (emptyList())
+            result.summary shouldBe (null)
+            result.affectedSchedules shouldBe (emptyList())
+        }
+
+        "only remove notifications when postponing missing instances" {
+            val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
+
+            val missing = UUID.randomUUID()
+
+            val result = SchedulerOps.postpone(
+                schedules,
+                SchedulerOps.Message.Postpone(task.id, instance = missing, by = Duration.ofSeconds(1))
+            )
+
+            result.schedules shouldBe (schedules)
+            result.notifications shouldBe (
+                listOf(SchedulerOps.Notification.DeleteInstanceNotifications(task.id, missing))
+            )
             result.summary shouldBe (null)
             result.affectedSchedules shouldBe (emptyList())
         }

@@ -156,5 +156,17 @@ class TaskSpec : WordSpec({
             Task.Schedule.Repeating.Interval.of(6, ChronoUnit.SECONDS).amount() shouldBe (Duration.ofSeconds(6))
             Task.Schedule.Repeating.Interval.of(7, ChronoUnit.MILLIS).amount() shouldBe (Duration.ofMillis(7))
         }
+
+        "fail to create repeating schedules without any days" {
+            val e = shouldThrow<IllegalArgumentException> {
+                Task.Schedule.Repeating(
+                    start = Instant.now(),
+                    every = Duration.ofMinutes(20).toInterval(),
+                    days = emptySet()
+                )
+            }
+
+            e.message shouldBe ("At least one day of the week is required for a repeating schedule")
+        }
     }
 })

@@ -75,7 +75,17 @@ class TaskEntityDaoSpec {
             }
 
             assertThat(dao.get().await().size, equalTo(5))
-            assertThat(dao.goals().await().sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
+            assertThat(runBlocking { dao.getGoals() }.sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
+        }
+    }
+
+    @Test
+    fun retrieveAllTaskEntities() {
+        withDao { dao ->
+            assertThat(runBlocking { dao.getAll() }, equalTo(emptyList()))
+
+            val taskId = runBlocking { dao.put(entity) }
+            assertThat(runBlocking { dao.getAll() }, equalTo(listOf(entity.copy(id = taskId.toInt()))))
         }
     }
 

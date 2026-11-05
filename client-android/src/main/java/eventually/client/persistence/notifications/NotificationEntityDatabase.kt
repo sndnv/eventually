@@ -9,7 +9,7 @@ import eventually.client.persistence.Converters
 import eventually.client.persistence.schedules.TaskScheduleEntityDatabase
 import org.jetbrains.annotations.TestOnly
 
-@Database(entities = [NotificationEntity::class], version = 1, exportSchema = false)
+@Database(entities = [NotificationEntity::class], version = 1, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class NotificationEntityDatabase : RoomDatabase() {
     abstract fun dao(): NotificationEntityDao

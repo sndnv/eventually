@@ -10,7 +10,9 @@ import eventually.core.model.Task
 class TaskRepository(private val dao: TaskEntityDao) {
     val tasks: LiveData<List<Task>> = dao.get().map { entities -> entities.map { it.asTask() } }
 
-    val goals: LiveData<List<String>> = dao.goals()
+    suspend fun all(): List<Task> = dao.getAll().map { it.asTask() }
+
+    suspend fun goals(): List<String> = dao.getGoals()
 
     suspend fun put(task: Task): Long = dao.put(task.asEntity())
 

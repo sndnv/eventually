@@ -1,35 +1,20 @@
 package eventually.client.persistence.tasks
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import eventually.core.model.Task
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TaskViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo: TaskRepository = TaskRepository(application)
-
+@HiltViewModel
+class TaskViewModel @Inject constructor(
+    private val repo: TaskRepository,
+) : ViewModel() {
     val tasks: LiveData<List<Task>> = repo.tasks
 
-    val goals: LiveData<List<String>> = repo.goals
+    suspend fun goals(): List<String> = repo.goals()
 
-    fun put(task: Task): CompletableDeferred<Long> {
-        val response = CompletableDeferred<Long>()
-        viewModelScope.launch(Dispatchers.IO) {
-            response.complete(repo.put(task))
-        }
-        return response
-    }
+    suspend fun put(task: Task): Long = repo.put(task)
 
-    fun delete(task: Int): CompletableDeferred<Unit> {
-        val response = CompletableDeferred<Unit>()
-        viewModelScope.launch(Dispatchers.IO) {
-            repo.delete(task)
-            response.complete(Unit)
-        }
-        return response
-    }
+    suspend fun delete(task: Int) = repo.delete(task)
 }

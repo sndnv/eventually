@@ -31,6 +31,12 @@ data class Task(
             val every: Interval,
             val days: Set<DayOfWeek>
         ) : Schedule() {
+            init {
+                require(days.isNotEmpty()) {
+                    "At least one day of the week is required for a repeating schedule"
+                }
+            }
+
             override fun next(after: Instant, within: Duration): List<Instant> {
                 val withinEnd = after.plus(within)
 

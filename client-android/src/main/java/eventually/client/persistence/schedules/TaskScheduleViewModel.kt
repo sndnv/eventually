@@ -1,41 +1,20 @@
 package eventually.client.persistence.schedules
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import eventually.core.model.TaskSchedule
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TaskScheduleViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo: TaskScheduleRepository = TaskScheduleRepository(application)
-
+@HiltViewModel
+class TaskScheduleViewModel @Inject constructor(
+    private val repo: TaskScheduleRepository,
+) : ViewModel() {
     val schedules: LiveData<List<TaskScheduleEntity>> = repo.schedules
 
-    fun put(schedule: TaskSchedule): CompletableDeferred<Unit> {
-        val response = CompletableDeferred(Unit)
-        viewModelScope.launch(Dispatchers.IO) {
-            response.complete(repo.put(schedule))
-        }
-        return response
-    }
+    suspend fun put(schedule: TaskSchedule) = repo.put(schedule)
 
-    fun put(schedule: TaskScheduleEntity): CompletableDeferred<Unit> {
-        val response = CompletableDeferred(Unit)
-        viewModelScope.launch(Dispatchers.IO) {
-            response.complete(repo.put(schedule))
-        }
-        return response
-    }
+    suspend fun put(schedule: TaskScheduleEntity) = repo.put(schedule)
 
-    fun delete(task: Int): CompletableDeferred<Unit> {
-        val response = CompletableDeferred<Unit>()
-        viewModelScope.launch(Dispatchers.IO) {
-            repo.delete(task)
-            response.complete(Unit)
-        }
-        return response
-    }
+    suspend fun delete(task: Int) = repo.delete(task)
 }
