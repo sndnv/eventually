@@ -15,11 +15,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.DialogFragment
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.textfield.TextInputLayout
 import eventually.client.R
@@ -38,10 +39,11 @@ import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+@AndroidEntryPoint
 class StatsActivity : AppCompatActivity() {
-    private lateinit var taskViewModel: TaskViewModel
-    private lateinit var taskScheduleViewModel: TaskScheduleViewModel
-    private lateinit var notificationViewModel: NotificationViewModel
+    private val taskViewModel: TaskViewModel by viewModels()
+    private val taskScheduleViewModel: TaskScheduleViewModel by viewModels()
+    private val notificationViewModel: NotificationViewModel by viewModels()
 
     private lateinit var binding: ActivityStatsBinding
 
@@ -116,10 +118,6 @@ class StatsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_stats)
-
-        taskViewModel = ViewModelProvider(this)[TaskViewModel::class.java]
-        taskScheduleViewModel = ViewModelProvider(this)[TaskScheduleViewModel::class.java]
-        notificationViewModel = ViewModelProvider(this)[NotificationViewModel::class.java]
 
         binding = DataBindingUtil.setContentView(this, R.layout.activity_stats)
 
@@ -224,9 +222,9 @@ class StatsActivity : AppCompatActivity() {
 
     private fun importData(data: DataExport) {
         lifecycleScope.launch(Dispatchers.IO) {
-            data.tasks.forEach { taskViewModel.put(it).join() }
-            data.schedules.forEach { taskScheduleViewModel.put(it).join() }
-            data.notifications.forEach { notificationViewModel.put(it).join() }
+            data.tasks.forEach { taskViewModel.put(it) }
+            data.schedules.forEach { taskScheduleViewModel.put(it) }
+            data.notifications.forEach { notificationViewModel.put(it) }
 
             val intent = Intent(this@StatsActivity, SchedulerService::class.java)
             intent.action = SchedulerService.ActionReload

@@ -75,6 +75,16 @@ class TaskScheduleRepositorySpec {
         assertThat(repo.schedules.await(), equalTo(emptyList()))
     }
 
+    @Test
+    fun retrieveAllSchedules() {
+        val repo = createRepo()
+
+        assertThat(runBlocking { repo.all() }, equalTo(emptyList()))
+
+        runBlocking { repo.put(schedule) }
+        assertThat(runBlocking { repo.all() }, equalTo(listOf(entity)))
+    }
+
     private val instant = Instant.now().truncatedTo(ChronoUnit.SECONDS)
     private val instance1 = TaskInstance(instant = instant)
     private val instance2 = TaskInstance(instant = instant.plusSeconds(42)).copy(postponed = Duration.ofMinutes(5))
@@ -129,6 +139,8 @@ class TaskScheduleRepositorySpec {
             val data = MutableLiveData<List<TaskScheduleEntity>>(emptyList())
 
             override fun get(): LiveData<List<TaskScheduleEntity>> = data
+
+            override suspend fun getAll(): List<TaskScheduleEntity> = entities.values.toList()
 
             override suspend fun put(entity: TaskScheduleEntity) {
                 entities[entity.task] = entity

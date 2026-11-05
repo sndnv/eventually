@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import eventually.client.persistence.Converters
 import org.jetbrains.annotations.TestOnly
 
-@Database(entities = [TaskEntity::class], version = 2, exportSchema = false)
+@Database(entities = [TaskEntity::class], version = 2, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class TaskEntityDatabase : RoomDatabase() {
     abstract fun dao(): TaskEntityDao

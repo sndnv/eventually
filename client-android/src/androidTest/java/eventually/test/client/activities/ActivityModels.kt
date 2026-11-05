@@ -4,10 +4,13 @@ import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import eventually.client.persistence.notifications.NotificationEntityDatabase
+import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.persistence.notifications.NotificationViewModel
 import eventually.client.persistence.schedules.TaskScheduleEntityDatabase
+import eventually.client.persistence.schedules.TaskScheduleRepository
 import eventually.client.persistence.schedules.TaskScheduleViewModel
 import eventually.client.persistence.tasks.TaskEntityDatabase
+import eventually.client.persistence.tasks.TaskRepository
 import eventually.client.persistence.tasks.TaskViewModel
 
 object ActivityModels {
@@ -42,7 +45,11 @@ object ActivityModels {
             tasks.clearAllTables()
             schedules.clearAllTables()
             notifications.clearAllTables()
-            f(TaskViewModel(application), TaskScheduleViewModel(application), NotificationViewModel(application))
+            f(
+                TaskViewModel(TaskRepository(application)),
+                TaskScheduleViewModel(TaskScheduleRepository(application)),
+                NotificationViewModel(NotificationRepository(application))
+            )
         } finally {
             tasks.clearAllTables()
             schedules.clearAllTables()

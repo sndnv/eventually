@@ -9,7 +9,7 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
-import ca.antonious.materialdaypicker.MaterialDayPicker
+import eventually.client.activities.views.MaterialDayPicker
 import com.google.android.material.chip.Chip
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -199,6 +199,7 @@ object TaskDetails {
             else -> Unit // do nothing
         }
 
+        scheduleButton.clearOnButtonCheckedListeners()
         scheduleButton.addOnButtonCheckedListener { _, checkedButton, isChecked ->
             if (isChecked) {
                 when (checkedButton) {

@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Eventually</string>
+    <string name="exact_alarm_prompt_message">Reminders may be delayed without exact alarm permission</string>
+    <string name="exact_alarm_prompt_action">Settings</string>
     <string name="main_top_app_bar_subtitle_summary">Summary</string>
     <string name="main_top_app_bar_subtitle_list">Tasks</string>
     <string name="main_top_app_bar_subtitle_calendar">Calendar</string>

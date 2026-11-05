@@ -3,13 +3,18 @@ package eventually.test.client.scheduling
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import androidx.preference.PreferenceManager
 import androidx.test.core.app.ApplicationProvider
+import eventually.client.activities.receivers.PostponeReceiver
 import eventually.client.scheduling.NotificationManagerExtensions
 import eventually.client.scheduling.NotificationManagerExtensions.createInstanceNotificationChannels
 import eventually.client.scheduling.NotificationManagerExtensions.deleteInstanceNotifications
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceContextSwitchNotification
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceExecutionNotification
+import eventually.client.serialization.Extras.requireDuration
+import eventually.client.settings.Settings
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
@@ -25,12 +30,14 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneOffset
+import java.util.Objects
 import java.util.UUID
 
 @RunWith(RobolectricTestRunner::class)
@@ -94,12 +101,50 @@ class NotificationManagerExtensionsSpec {
     }
 
     @Test
+    fun createSingleUseInstanceActionIntents() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val dismiss = NotificationManagerExtensions.Intents.createDismissIntent(context, task, instance)
+        val postpone = NotificationManagerExtensions.Intents.createPostponeIntent(context, task, instance)
+
+        listOf(dismiss, postpone).forEach { intent ->
+            val flags = shadowOf(intent).flags
+
+            assertThat(flags and PendingIntent.FLAG_ONE_SHOT, equalTo(PendingIntent.FLAG_ONE_SHOT))
+            assertThat(flags and PendingIntent.FLAG_UPDATE_CURRENT, equalTo(PendingIntent.FLAG_UPDATE_CURRENT))
+            assertThat(flags and PendingIntent.FLAG_IMMUTABLE, equalTo(PendingIntent.FLAG_IMMUTABLE))
+        }
+    }
+
+    @Test
+    fun updateInstanceActionExtrasWhenRecreated() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+
+        preferences.edit().putString(Settings.Keys.PostponeLength, "10").commit()
+        val original = NotificationManagerExtensions.Intents.createPostponeIntent(context, task, instance)
+
+        preferences.edit().putString(Settings.Keys.PostponeLength, "25").commit()
+        val recreated = NotificationManagerExtensions.Intents.createPostponeIntent(context, task, instance)
+
+        assertThat(recreated, equalTo(original))
+        assertThat(
+            shadowOf(recreated).savedIntent.requireDuration(PostponeReceiver.ExtraBy),
+            equalTo(Duration.ofMinutes(25))
+        )
+    }
+
+    @Test
     fun removeInstanceNotifications() {
         val manager = mockk<NotificationManager>(relaxed = true)
 
-        manager.deleteInstanceNotifications(task = 1, instance = UUID.randomUUID())
+        val task = 1
+        val instance = UUID.randomUUID()
 
-        verify(exactly = 1) { manager.cancel(any()) }
+        manager.deleteInstanceNotifications(task = task, instance = instance)
+
+        verify(exactly = 1) { manager.cancel(Objects.hash(task, instance) and Int.MAX_VALUE) }
+        verify(exactly = 1) { manager.cancel(task + instance.hashCode()) }
 
         confirmVerified(manager)
     }

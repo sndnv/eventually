@@ -97,7 +97,7 @@
                 android:text="@string/task_details_field_title_schedule_repeating_days"
                 android:textAppearance="?attr/textAppearanceCaption" />
 
-            <ca.antonious.materialdaypicker.MaterialDayPicker
+            <eventually.client.activities.views.MaterialDayPicker
                 android:id="@+id/days"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />

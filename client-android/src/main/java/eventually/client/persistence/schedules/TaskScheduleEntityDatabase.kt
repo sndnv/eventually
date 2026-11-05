@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 import eventually.client.persistence.Converters
 import org.jetbrains.annotations.TestOnly
 
-@Database(entities = [TaskScheduleEntity::class], version = 1, exportSchema = false)
+@Database(entities = [TaskScheduleEntity::class], version = 1, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class TaskScheduleEntityDatabase : RoomDatabase() {
     abstract fun dao(): TaskScheduleEntityDao

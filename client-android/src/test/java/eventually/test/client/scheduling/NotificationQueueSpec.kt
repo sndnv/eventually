@@ -6,18 +6,18 @@ import android.app.PendingIntent
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import eventually.client.persistence.notifications.NotificationEntity
-import eventually.client.persistence.notifications.NotificationViewModel
+import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.scheduling.NotificationQueue
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
 import eventually.core.scheduling.SchedulerOps
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.confirmVerified
-import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
@@ -107,8 +107,8 @@ class NotificationQueueSpec {
 
     @Test
     fun removeUnnecessaryNotifications() {
-        val model = mockk<NotificationViewModel>()
-        every { model.get(any(), any(), any()) } returns CompletableDeferred(null as NotificationEntity?)
+        val model = mockk<NotificationRepository>()
+        coEvery { model.get(any(), any(), any()) } returns null
 
         val queue = NotificationQueue()
 
@@ -148,7 +148,7 @@ class NotificationQueueSpec {
             )
         )
 
-        verify(exactly = 6) { model.get(any(), any(), any()) }
+        coVerify(exactly = 6) { model.get(any(), any(), any()) }
 
         confirmVerified(model)
     }
@@ -172,9 +172,9 @@ class NotificationQueueSpec {
             hash = instance.hashCode()
         )
 
-        val model = mockk<NotificationViewModel>()
-        every { model.get(any(), any(), "execution") } returns CompletableDeferred(executionNotificationEntity)
-        every { model.get(any(), any(), "context") } returns CompletableDeferred(contextNotificationEntity)
+        val model = mockk<NotificationRepository>()
+        coEvery { model.get(any(), any(), "execution") } returns executionNotificationEntity
+        coEvery { model.get(any(), any(), "context") } returns contextNotificationEntity
 
         val queue = NotificationQueue()
 
@@ -202,16 +202,16 @@ class NotificationQueueSpec {
             )
         )
 
-        verify(exactly = notifications.size) { model.get(any(), any(), any()) }
+        coVerify(exactly = notifications.size) { model.get(any(), any(), any()) }
 
         confirmVerified(model)
     }
 
     @Test
     fun releaseAccumulatedNotifications() {
-        val model = mockk<NotificationViewModel>()
-        every { model.put(any(), any(), any()) } returns CompletableDeferred(42)
-        every { model.delete(any(), any()) } returns CompletableDeferred(Unit)
+        val model = mockk<NotificationRepository>()
+        coEvery { model.put(task = any(), instance = any(), type = any()) } returns 42
+        coEvery { model.delete(task = any(), instance = any()) } returns Unit
 
         val notifications = listOf(
             executionNotification,
@@ -238,14 +238,14 @@ class NotificationQueueSpec {
 
         runBlocking { queue.release(context, alarmManager, notificationManager, model) }
 
-        verify(exactly = 2) { model.put(any(), any(), any()) }
-        verify(exactly = 1) { model.delete(any(), any()) }
+        coVerify(exactly = 2) { model.put(task = any(), instance = any(), type = any()) }
+        coVerify(exactly = 1) { model.delete(task = any(), instance = any()) }
 
         verify(exactly = 1) { alarmManager.setExactAndAllowWhileIdle(any(), any(), any()) }
         verify(exactly = 1) { alarmManager.cancel(any<PendingIntent>()) }
 
         verify(exactly = 2) { notificationManager.notify(any(), any()) }
-        verify(exactly = 1) { notificationManager.cancel(any()) }
+        verify(exactly = 2) { notificationManager.cancel(any()) }
 
         confirmVerified(model)
         confirmVerified(alarmManager)

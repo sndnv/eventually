@@ -4,8 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Message
 import androidx.test.core.app.ApplicationProvider
-import eventually.client.persistence.schedules.TaskScheduleViewModel
-import eventually.client.persistence.tasks.TaskViewModel
+import eventually.client.persistence.schedules.TaskScheduleEntity
+import eventually.client.persistence.schedules.TaskScheduleRepository
+import eventually.client.persistence.tasks.TaskRepository
 import eventually.client.scheduling.NotificationQueue
 import eventually.client.scheduling.SchedulerService
 import eventually.client.scheduling.SchedulerService.Companion.applyTo
@@ -23,11 +24,10 @@ import eventually.core.model.TaskSchedule
 import eventually.core.model.TaskSummary
 import eventually.core.model.TaskSummaryConfig
 import eventually.core.scheduling.SchedulerOps
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.confirmVerified
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
@@ -127,13 +127,13 @@ class SchedulerServiceSpec {
 
     @Test
     fun handleSchedulerMessages() {
-        val model = mockk<TaskViewModel>()
-        every { model.put(task) } returns CompletableDeferred(task.id.toLong())
-        every { model.delete(task.id) } returns CompletableDeferred(Unit)
+        val repo = mockk<TaskRepository>()
+        coEvery { repo.put(task) } returns task.id.toLong()
+        coEvery { repo.delete(task.id) } returns Unit
 
         runBlocking {
             assertThat(
-                Message().apply { obj = SchedulerOps.Message.Put(task) }.handle(emptyMap(), model),
+                Message().apply { obj = SchedulerOps.Message.Put(task) }.handle(emptyMap(), repo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(Pair(task.id, TaskSchedule(task))),
@@ -146,7 +146,7 @@ class SchedulerServiceSpec {
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Delete(task.id) }
-                    .handle(mapOf(Pair(task.id, TaskSchedule(task))), model),
+                    .handle(mapOf(Pair(task.id, TaskSchedule(task))), repo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = emptyMap(),
@@ -159,7 +159,7 @@ class SchedulerServiceSpec {
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Dismiss(task.id, instance.id) }
-                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), model),
+                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), repo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(
@@ -178,7 +178,7 @@ class SchedulerServiceSpec {
             )
 
             val undoResult = Message().apply { obj = SchedulerOps.Message.UndoDismiss(task.id, instance.instant) }
-                .handle(mapOf(Pair(task.id, TaskSchedule(task, emptyMap(), listOf(instance.instant)))), model)
+                .handle(mapOf(Pair(task.id, TaskSchedule(task, emptyMap(), listOf(instance.instant)))), repo)
             val newInstance = undoResult?.schedules?.values?.first()?.instances?.values?.first()!!
             assertThat(
                 undoResult,
@@ -199,7 +199,7 @@ class SchedulerServiceSpec {
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Postpone(task.id, instance.id, postponeBy) }
-                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), model),
+                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), repo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(
@@ -218,13 +218,13 @@ class SchedulerServiceSpec {
             )
 
             assertThat(
-                Message().apply { obj = SchedulerOps.Message.Evaluate(config) }.handle(emptyMap(), model),
+                Message().apply { obj = SchedulerOps.Message.Evaluate(config) }.handle(emptyMap(), repo),
                 equalTo(null)
             )
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Init(tasks = listOf(task), schedules = emptyList()) }
-                    .handle(emptyMap(), model),
+                    .handle(emptyMap(), repo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(Pair(task.id, TaskSchedule(task))),
@@ -236,15 +236,15 @@ class SchedulerServiceSpec {
             )
 
             try {
-                Message().apply { obj = "other" }.handle(emptyMap(), model)
+                Message().apply { obj = "other" }.handle(emptyMap(), repo)
                 fail("Excepted failure but none encountered")
             } catch (e: IllegalArgumentException) {
                 assertThat(e.message, equalTo("Unexpected message encountered: [other]"))
             }
 
-            verify(exactly = 1) { model.put(any()) }
-            verify(exactly = 1) { model.delete(any()) }
-            confirmVerified(model)
+            coVerify(exactly = 1) { repo.put(any()) }
+            coVerify(exactly = 1) { repo.delete(any()) }
+            confirmVerified(repo)
         }
     }
 
@@ -266,13 +266,13 @@ class SchedulerServiceSpec {
             val notifications = NotificationQueue()
             assertThat(notifications.notifications.isEmpty(), equalTo(true))
 
-            val model = mockk<TaskScheduleViewModel>()
-            every { model.put(any() as TaskSchedule) } returns CompletableDeferred(Unit)
-            every { model.delete(any()) } returns CompletableDeferred(Unit)
+            val scheduleRepo = mockk<TaskScheduleRepository>()
+            coEvery { scheduleRepo.put(any() as TaskSchedule) } returns Unit
+            coEvery { scheduleRepo.delete(any()) } returns Unit
 
             result.applyTo(
                 notifications = notifications,
-                taskScheduleViewModel = model,
+                taskScheduleRepository = scheduleRepo,
                 updateSchedules = { schedulesUpdated.set(true) },
                 updateSummary = { summaryUpdated.set(true) }
             )
@@ -280,9 +280,51 @@ class SchedulerServiceSpec {
             assertThat(schedulesUpdated.get(), equalTo(true))
             assertThat(summaryUpdated.get(), equalTo(true))
 
-            verify(exactly = 1) { model.put(TaskSchedule(task)) }
-            verify(exactly = 1) { model.delete(removedSchedule) }
-            confirmVerified(model)
+            coVerify(exactly = 1) { scheduleRepo.put(TaskSchedule(task)) }
+            coVerify(exactly = 1) { scheduleRepo.delete(removedSchedule) }
+            confirmVerified(scheduleRepo)
+        }
+    }
+
+    @Test
+    fun loadInitialDataFromRepositories() {
+        runBlocking {
+            val otherTask = task.copy(id = 43, name = "other-task")
+            val instance = TaskInstance(instant = Instant.now().truncatedTo(ChronoUnit.SECONDS))
+
+            val existingSchedule = TaskScheduleEntity(
+                task = task.id,
+                instances = mapOf(instance.id to instance),
+                dismissed = listOf(instance.instant.minusSeconds(60))
+            )
+            val orphanedSchedule = TaskScheduleEntity(task = 21, instances = emptyMap(), dismissed = emptyList())
+
+            val taskRepo = mockk<TaskRepository>()
+            coEvery { taskRepo.all() } returns listOf(task, otherTask)
+
+            val scheduleRepo = mockk<TaskScheduleRepository>()
+            coEvery { scheduleRepo.all() } returns listOf(existingSchedule, orphanedSchedule)
+
+            val init = SchedulerService.loadInit(taskRepo, scheduleRepo)
+
+            assertThat(init.tasks, equalTo(listOf(task, otherTask)))
+            assertThat(
+                init.schedules,
+                equalTo(
+                    listOf(
+                        TaskSchedule(
+                            task = task,
+                            instances = existingSchedule.instances,
+                            dismissed = existingSchedule.dismissed
+                        )
+                    )
+                )
+            )
+
+            coVerify(exactly = 1) { taskRepo.all() }
+            coVerify(exactly = 1) { scheduleRepo.all() }
+            confirmVerified(taskRepo)
+            confirmVerified(scheduleRepo)
         }
     }
 

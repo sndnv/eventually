@@ -303,6 +303,7 @@ class Converters {
                         start = Instant.ofEpochSecond(start),
                         every = jsonToInterval(every),
                         days = days.map { day -> DayOfWeek.of(day.asInt) }.toSet()
+                            .ifEmpty { Task.Schedule.Repeating.DefaultDays }
                     )
                 }
 

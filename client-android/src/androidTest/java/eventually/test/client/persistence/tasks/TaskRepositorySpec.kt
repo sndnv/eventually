@@ -3,7 +3,6 @@ package eventually.test.client.persistence.tasks
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.map
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import eventually.client.persistence.tasks.TaskEntity
 import eventually.client.persistence.tasks.TaskEntityDao
@@ -78,7 +77,17 @@ class TaskRepositorySpec {
         }
 
         assertThat(repo.tasks.await().size, equalTo(5))
-        assertThat(repo.goals.await().sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
+        assertThat(runBlocking { repo.goals() }.sorted(), equalTo(listOf("goal-1", "goal-2", "goal-3")))
+    }
+
+    @Test
+    fun retrieveAllTasks() {
+        val repo = createRepo()
+
+        assertThat(runBlocking { repo.all() }, equalTo(emptyList()))
+
+        val taskId = runBlocking { repo.put(task) }
+        assertThat(runBlocking { repo.all() }, equalTo(listOf(task.copy(id = taskId.toInt()))))
     }
 
     @get:Rule
@@ -105,7 +114,9 @@ class TaskRepositorySpec {
 
             override fun get(): LiveData<List<TaskEntity>> = data
 
-            override fun goals(): LiveData<List<String>> = data.map { it.map { t -> t.goal }.distinct() }
+            override suspend fun getAll(): List<TaskEntity> = entities.values.toList()
+
+            override suspend fun getGoals(): List<String> = entities.values.map { it.goal }.distinct()
 
             override suspend fun put(entity: TaskEntity): Long {
                 val id = entities[entity.id]?.id ?: (entities.size + 1)

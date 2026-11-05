@@ -12,20 +12,19 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Message
 import android.os.Process
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import dagger.hilt.android.AndroidEntryPoint
 import eventually.client.activities.receivers.DismissReceiver
 import eventually.client.activities.receivers.PostponeReceiver
 import eventually.client.persistence.Converters.Companion.asSchedule
-import eventually.client.persistence.notifications.NotificationViewModel
-import eventually.client.persistence.schedules.TaskScheduleEntity
+import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.persistence.schedules.TaskScheduleRepository
-import eventually.client.persistence.schedules.TaskScheduleViewModel
 import eventually.client.persistence.tasks.TaskRepository
-import eventually.client.persistence.tasks.TaskViewModel
 import eventually.client.serialization.Extras.requireDuration
 import eventually.client.serialization.Extras.requireInstanceId
 import eventually.client.serialization.Extras.requireInstant
@@ -33,14 +32,16 @@ import eventually.client.serialization.Extras.requireTask
 import eventually.client.serialization.Extras.requireTaskId
 import eventually.client.settings.Settings
 import eventually.client.settings.Settings.getSummarySize
-import eventually.core.model.Task
 import eventually.core.model.TaskSchedule
 import eventually.core.model.TaskSummary
 import eventually.core.model.TaskSummaryConfig
 import eventually.core.scheduling.SchedulerOps
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.time.Instant
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenceChangeListener {
     private val binder: SchedulerBinder = SchedulerBinder()
 
@@ -49,6 +50,10 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
     private lateinit var dismissReceiver: DismissReceiver
     private lateinit var postponeReceiver: PostponeReceiver
+
+    @Inject lateinit var taskRepository: TaskRepository
+    @Inject lateinit var taskScheduleRepository: TaskScheduleRepository
+    @Inject lateinit var notificationRepository: NotificationRepository
 
     private val providedSchedules: MutableLiveData<Map<Int, TaskSchedule>> = MutableLiveData(emptyMap())
     private val providedSummary: MutableLiveData<TaskSummary> = MutableLiveData(TaskSummary.empty())
@@ -66,10 +71,6 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         private val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         private val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        private val taskViewModel = TaskViewModel(application)
-        private val taskScheduleViewModel = TaskScheduleViewModel(application)
-        private val notificationViewModel = NotificationViewModel(application)
-
         private var schedules: Map<Int, TaskSchedule> = emptyMap()
         private var summary: TaskSummary = TaskSummary.empty()
 
@@ -78,10 +79,10 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
             runBlocking {
                 msg
-                    .handle(schedules, taskViewModel)
+                    .handle(schedules, taskRepository)
                     .applyTo(
                         notifications = notifications,
-                        taskScheduleViewModel = taskScheduleViewModel,
+                        taskScheduleRepository = taskScheduleRepository,
                         updateSchedules = { schedules = it },
                         updateSummary = { summary = it }
                     )
@@ -90,14 +91,14 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                     .evaluate(schedules, SchedulerOps.Message.Evaluate(config))
                     .applyTo(
                         notifications = notifications,
-                        taskScheduleViewModel = taskScheduleViewModel,
+                        taskScheduleRepository = taskScheduleRepository,
                         updateSchedules = { schedules = it },
                         updateSummary = { summary = it }
                     )
 
                 notifications
-                    .distinct(notificationViewModel)
-                    .release(this@SchedulerService, alarmManager, notificationManager, notificationViewModel)
+                    .distinct(notificationRepository)
+                    .release(this@SchedulerService, alarmManager, notificationManager, notificationRepository)
             }
 
             val nextEvaluation =
@@ -171,8 +172,18 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         dismissReceiver = DismissReceiver()
         postponeReceiver = PostponeReceiver()
 
-        registerReceiver(dismissReceiver, dismissReceiver.intentFilter)
-        registerReceiver(postponeReceiver, postponeReceiver.intentFilter)
+        ContextCompat.registerReceiver(
+            this,
+            dismissReceiver,
+            dismissReceiver.intentFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        ContextCompat.registerReceiver(
+            this,
+            postponeReceiver,
+            postponeReceiver.intentFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     override fun onDestroy() {
@@ -188,36 +199,11 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
     }
 
     private fun load() {
-        val tasksRepo = TaskRepository(this@SchedulerService)
-        val schedulesRepo = TaskScheduleRepository(this@SchedulerService)
-
-        val tasksWithSchedules: LiveData<Pair<List<Task>, List<TaskScheduleEntity>>> =
-            object : MediatorLiveData<Pair<List<Task>, List<TaskScheduleEntity>>>() {
-                var tasks: List<Task>? = null
-                var schedules: List<TaskScheduleEntity>? = null
-
-                init {
-                    addSource(tasksRepo.tasks) { tasks ->
-                        this.tasks = tasks
-                        this.schedules?.let { value = tasks to it }
-                    }
-                    addSource(schedulesRepo.schedules) { schedules ->
-                        this.schedules = schedules
-                        this.tasks?.let { value = it to schedules }
-                    }
-                }
-            }
-
-        tasksWithSchedules.observe(this@SchedulerService) { (tasks, schedules) ->
-            tasksWithSchedules.removeObservers(this@SchedulerService)
+        lifecycleScope.launch {
+            val init = loadInit(taskRepository, taskScheduleRepository)
 
             handler.obtainMessage().let { msg ->
-                val schedulesWithTasks = schedules.mapNotNull { schedule ->
-                    tasks.find { it.id == schedule.task }?.let { schedule.asSchedule(it) }
-                }
-
-                tasksRepo.tasks.removeObservers(this@SchedulerService)
-                msg.obj = SchedulerOps.Message.Init(tasks, schedulesWithTasks)
+                msg.obj = init
                 handler.sendMessage(msg)
             }
         }
@@ -316,18 +302,30 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                 else -> throw IllegalArgumentException("Unexpected action encountered: [$action]")
             }
 
+        suspend fun loadInit(
+            taskRepository: TaskRepository,
+            taskScheduleRepository: TaskScheduleRepository
+        ): SchedulerOps.Message.Init {
+            val tasks = taskRepository.all()
+            val schedulesWithTasks = taskScheduleRepository.all().mapNotNull { schedule ->
+                tasks.find { it.id == schedule.task }?.let { schedule.asSchedule(it) }
+            }
+
+            return SchedulerOps.Message.Init(tasks, schedulesWithTasks)
+        }
+
         suspend fun Message.handle(
             schedules: Map<Int, TaskSchedule>,
-            taskViewModel: TaskViewModel
+            taskRepository: TaskRepository
         ): SchedulerOps.SchedulerResult? =
             when (val message = obj) {
                 is SchedulerOps.Message.Put -> {
-                    val taskId = taskViewModel.put(message.task).await()
+                    val taskId = taskRepository.put(message.task)
                     SchedulerOps.put(schedules, message.copy(task = message.task.copy(id = taskId.toInt())))
                 }
 
                 is SchedulerOps.Message.Delete -> {
-                    taskViewModel.delete(message.task).await()
+                    taskRepository.delete(message.task)
                     SchedulerOps.delete(schedules, message)
                 }
 
@@ -341,7 +339,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
         suspend fun SchedulerOps.SchedulerResult?.applyTo(
             notifications: NotificationQueue,
-            taskScheduleViewModel: TaskScheduleViewModel,
+            taskScheduleRepository: TaskScheduleRepository,
             updateSchedules: (Map<Int, TaskSchedule>) -> Unit,
             updateSummary: (TaskSummary) -> Unit
         ) {
@@ -354,9 +352,9 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
                 affectedSchedules.forEach {
                     when (val schedule = schedules[it]) {
-                        null -> taskScheduleViewModel.delete(it)
-                        else -> taskScheduleViewModel.put(schedule)
-                    }.await()
+                        null -> taskScheduleRepository.delete(it)
+                        else -> taskScheduleRepository.put(schedule)
+                    }
                 }
             }
         }

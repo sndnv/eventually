@@ -201,6 +201,26 @@ class ConvertersSpec {
     }
 
     @Test
+    fun convertRepeatingTaskSchedulesWithNoDaysToDefaultDays() {
+        val converters = Converters()
+
+        val converted = converters.stringToSchedule(
+                """{"type":"repeating","start":23,"every":{"unit":"seconds","amount":42},"days":[]}"""
+        )
+
+        assertThat(
+                converted,
+                equalTo(
+                        Task.Schedule.Repeating(
+                                start = Instant.ofEpochSecond(23),
+                                every = Duration.ofSeconds(42).toInterval(),
+                                days = Task.Schedule.Repeating.DefaultDays
+                        )
+                )
+        )
+    }
+
+    @Test
     fun failToConvertTaskSchedulesFromStringOnNoRepetitionDuration() {
         val converters = Converters()
 

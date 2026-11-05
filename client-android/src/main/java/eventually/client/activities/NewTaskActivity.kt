@@ -3,22 +3,26 @@ package eventually.client.activities
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
+import dagger.hilt.android.AndroidEntryPoint
 import eventually.client.R
 import eventually.client.activities.helpers.TaskDetails.initTaskDetails
 import eventually.client.activities.helpers.TaskManagement
 import eventually.client.databinding.ActivityNewTaskBinding
 import eventually.client.persistence.tasks.TaskViewModel
+import kotlinx.coroutines.launch
 import java.time.Instant
 
+@AndroidEntryPoint
 class NewTaskActivity : AppCompatActivity() {
+    private val taskViewModel: TaskViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val taskViewModel = ViewModelProvider(this).get(TaskViewModel::class.java)
 
         val date = when (val date = intent.extras?.getLong(ExtraDate)) {
             null -> null
@@ -28,10 +32,10 @@ class NewTaskActivity : AppCompatActivity() {
             }
         }
 
-        taskViewModel.goals.observe(this) { goals ->
-            taskViewModel.goals.removeObservers(this)
+        lifecycleScope.launch {
+            val goals = taskViewModel.goals()
 
-            val binding: ActivityNewTaskBinding = DataBindingUtil.setContentView(this, R.layout.activity_new_task)
+            val binding: ActivityNewTaskBinding = DataBindingUtil.setContentView(this@NewTaskActivity, R.layout.activity_new_task)
 
             findViewById<MaterialToolbar>(R.id.topAppBar).setNavigationOnClickListener {
                 onBackPressedDispatcher.onBackPressed()

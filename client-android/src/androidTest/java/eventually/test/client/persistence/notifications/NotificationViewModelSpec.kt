@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.notifications.NotificationEntityDatabase
+import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.persistence.notifications.NotificationViewModel
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
@@ -31,7 +32,7 @@ class NotificationViewModelSpec {
         withModel { model ->
             assertThat(model.notifications.await(), equalTo(emptyList()))
 
-            runBlocking { model.put(task, instance, entity.type).await() }
+            runBlocking { model.put(task, instance, entity.type) }
 
             eventually {
                 assertThat(
@@ -47,7 +48,7 @@ class NotificationViewModelSpec {
         withModel { model ->
             assertThat(model.notifications.await(), equalTo(emptyList()))
 
-            runBlocking { model.put(entity).await() }
+            runBlocking { model.put(entity) }
 
             eventually {
                 assertThat(
@@ -64,15 +65,15 @@ class NotificationViewModelSpec {
             assertThat(model.notifications.await(), equalTo(emptyList()))
 
             runBlocking {
-                model.put(task, instance, entity.type).await()
+                model.put(task, instance, entity.type)
 
                 assertThat(
-                    model.get(entity.task, entity.instance, entity.type).await()?.copy(id = entity.id),
+                    model.get(entity.task, entity.instance, entity.type)?.copy(id = entity.id),
                     equalTo(entity)
                 )
 
                 assertThat(
-                    model.get(entity.task, entity.instance, "execution").await(),
+                    model.get(entity.task, entity.instance, "execution"),
                     equalTo(null)
                 )
             }
@@ -84,7 +85,7 @@ class NotificationViewModelSpec {
         withModel { model ->
             assertThat(model.notifications.await(), equalTo(emptyList()))
 
-            val notificationId = runBlocking { model.put(task, instance, entity.type).await() }
+            val notificationId = runBlocking { model.put(task, instance, entity.type) }
 
             eventually {
                 assertThat(
@@ -119,8 +120,8 @@ class NotificationViewModelSpec {
         withModel { model ->
             assertThat(model.notifications.await(), equalTo(emptyList()))
 
-            val contextNotificationId = runBlocking { model.put(task, instance, "context").await() }
-            val executionNotificationId = runBlocking { model.put(task, instance, "execution").await() }
+            val contextNotificationId = runBlocking { model.put(task, instance, "context") }
+            val executionNotificationId = runBlocking { model.put(task, instance, "execution") }
 
             eventually {
                 assertThat(
@@ -184,7 +185,7 @@ class NotificationViewModelSpec {
 
     private fun withModel(f: (model: NotificationViewModel) -> Unit) {
         val application = ApplicationProvider.getApplicationContext<Application>()
-        val model = NotificationViewModel(application)
+        val model = NotificationViewModel(NotificationRepository(application))
         val db = NotificationEntityDatabase.getInstance(application)
 
         try {

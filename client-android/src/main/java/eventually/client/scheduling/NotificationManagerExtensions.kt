@@ -107,6 +107,7 @@ object NotificationManagerExtensions {
 
     fun NotificationManager.deleteInstanceNotifications(task: Int, instance: UUID) {
         cancel(getInstanceNotificationId(task, instance))
+        cancel(getLegacyInstanceNotificationId(task, instance))
     }
 
     fun createForegroundServiceNotification(
@@ -134,6 +135,10 @@ object NotificationManagerExtensions {
     }
 
     private fun getInstanceNotificationId(task: Int, instance: UUID): Int {
+        return java.util.Objects.hash(task, instance) and Int.MAX_VALUE
+    }
+
+    private fun getLegacyInstanceNotificationId(task: Int, instance: UUID): Int {
         return task + instance.hashCode()
     }
 
@@ -170,7 +175,7 @@ object NotificationManagerExtensions {
                 context,
                 getInstanceNotificationId(task, instance) + DetailsActivityRequestCode,
                 intent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
         }
 
@@ -182,7 +187,7 @@ object NotificationManagerExtensions {
                     putTaskId(DismissReceiver.ExtraTask, task.id)
                     putInstanceId(DismissReceiver.ExtraInstance, instance.id)
                 },
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT
             )
         }
 
@@ -196,7 +201,7 @@ object NotificationManagerExtensions {
                     putInstanceId(PostponeReceiver.ExtraInstance, instance.id)
                     putDuration(PostponeReceiver.ExtraBy, by)
                 },
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_UPDATE_CURRENT
             )
         }
 

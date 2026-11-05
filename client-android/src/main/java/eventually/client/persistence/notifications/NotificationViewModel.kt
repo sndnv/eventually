@@ -1,60 +1,28 @@
 package eventually.client.persistence.notifications
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import javax.inject.Inject
 import java.util.UUID
 
-class NotificationViewModel(application: Application) : AndroidViewModel(application) {
-    private val repo: NotificationRepository = NotificationRepository(application)
-
+@HiltViewModel
+class NotificationViewModel @Inject constructor(
+    private val repo: NotificationRepository,
+) : ViewModel() {
     val notifications: LiveData<List<NotificationEntity>> = repo.notifications
 
-    fun put(task: Task, instance: TaskInstance, type: String): CompletableDeferred<Long> {
-        val response = CompletableDeferred<Long>()
-        viewModelScope.launch(Dispatchers.IO) {
-            response.complete(repo.put(task, instance, type))
-        }
-        return response
-    }
+    suspend fun put(task: Task, instance: TaskInstance, type: String): Long =
+        repo.put(task, instance, type)
 
-    fun put(notification: NotificationEntity): CompletableDeferred<Long> {
-        val response = CompletableDeferred<Long>()
-        viewModelScope.launch(Dispatchers.IO) {
-            response.complete(repo.put(notification))
-        }
-        return response
-    }
+    suspend fun put(notification: NotificationEntity): Long = repo.put(notification)
 
-    fun get(task: Int, instance: UUID, type: String): CompletableDeferred<NotificationEntity?> {
-        val response = CompletableDeferred<NotificationEntity?>()
-        viewModelScope.launch(Dispatchers.IO) {
-            response.complete(repo.get(task, instance, type))
-        }
-        return response
-    }
+    suspend fun get(task: Int, instance: UUID, type: String): NotificationEntity? =
+        repo.get(task, instance, type)
 
-    fun delete(id: Int): CompletableDeferred<Unit> {
-        val response = CompletableDeferred<Unit>()
-        viewModelScope.launch(Dispatchers.IO) {
-            repo.delete(id)
-            response.complete(Unit)
-        }
-        return response
-    }
+    suspend fun delete(id: Int) = repo.delete(id)
 
-    fun delete(task: Int, instance: UUID): CompletableDeferred<Unit> {
-        val response = CompletableDeferred<Unit>()
-        viewModelScope.launch(Dispatchers.IO) {
-            repo.delete(task, instance)
-            response.complete(Unit)
-        }
-        return response
-    }
+    suspend fun delete(task: Int, instance: UUID) = repo.delete(task, instance)
 }

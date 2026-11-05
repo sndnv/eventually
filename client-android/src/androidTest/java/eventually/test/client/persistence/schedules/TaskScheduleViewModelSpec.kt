@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import eventually.client.persistence.schedules.TaskScheduleEntity
 import eventually.client.persistence.schedules.TaskScheduleEntityDatabase
+import eventually.client.persistence.schedules.TaskScheduleRepository
 import eventually.client.persistence.schedules.TaskScheduleViewModel
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
@@ -33,7 +34,7 @@ class TaskScheduleViewModelSpec {
         withModel { model ->
             assertThat(model.schedules.await(), equalTo(emptyList()))
 
-            runBlocking { model.put(schedule).await() }
+            runBlocking { model.put(schedule) }
 
             eventually {
                 assertThat(model.schedules.await(), equalTo(listOf(entity)))
@@ -46,7 +47,7 @@ class TaskScheduleViewModelSpec {
         withModel { model ->
             assertThat(model.schedules.await(), equalTo(emptyList()))
 
-            runBlocking { model.put(entity).await() }
+            runBlocking { model.put(entity) }
 
             eventually {
                 assertThat(model.schedules.await(), equalTo(listOf(entity)))
@@ -59,7 +60,7 @@ class TaskScheduleViewModelSpec {
         withModel { model ->
             assertThat(model.schedules.await(), equalTo(emptyList()))
 
-            runBlocking { model.put(schedule).await() }
+            runBlocking { model.put(schedule) }
 
             eventually {
                 assertThat(model.schedules.await(), equalTo(listOf(entity)))
@@ -79,7 +80,7 @@ class TaskScheduleViewModelSpec {
         withModel { model ->
             assertThat(model.schedules.await(), equalTo(emptyList()))
 
-            runBlocking { model.put(schedule).await() }
+            runBlocking { model.put(schedule) }
 
             eventually {
                 assertThat(model.schedules.await(), equalTo(listOf(entity)))
@@ -143,7 +144,7 @@ class TaskScheduleViewModelSpec {
 
     private fun withModel(f: (model: TaskScheduleViewModel) -> Unit) {
         val application = ApplicationProvider.getApplicationContext<Application>()
-        val model = TaskScheduleViewModel(application)
+        val model = TaskScheduleViewModel(TaskScheduleRepository(application))
         val db = TaskScheduleEntityDatabase.getInstance(application)
 
         try {
