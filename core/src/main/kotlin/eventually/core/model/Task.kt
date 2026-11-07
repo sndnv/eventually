@@ -19,6 +19,10 @@ data class Task(
     val isActive: Boolean,
     val color: Int?
 ) {
+    companion object {
+        val MaxDuration: Duration = ChronoUnit.YEARS.duration.multipliedBy(100)
+    }
+
     sealed class Schedule {
         abstract fun next(after: Instant, within: Duration): List<Instant>
 
@@ -38,38 +42,50 @@ data class Task(
             }
 
             override fun next(after: Instant, within: Duration): List<Instant> {
+                val zone = ZoneId.systemDefault()
                 val withinEnd = after.plus(within)
 
-                val instants = scheduleInstants(step = every)
-                    .filter { it.isAfter(after) && days.contains(it.atZone(ZoneId.systemDefault()).dayOfWeek) }
+                val first = firstInstantAfter(after, zone) ?: return emptyList()
+                val horizon = runCatching { first.atZone(zone).plus(SearchHorizon).toInstant() }.getOrNull()
 
-                tailrec fun collect(from: Iterator<Instant>, collected: List<Instant>): List<Instant> {
-                    val current = from.next()
-                    return when {
-                        collected.isEmpty() -> {
-                            collect(from = from, collected = collected + current)
-                        }
-                        withinEnd.isBefore(current) -> {
-                            collected
-                        }
-                        else -> {
-                            collect(from = from, collected = collected + current)
-                        }
+                val matching = generateSequence(first) { it.nextInstant(zone) }
+                    .withIndex()
+                    .takeWhile { (index, instant) ->
+                        index < MinSearchCandidates || (horizon != null && !instant.isAfter(horizon))
                     }
-                }
+                    .map { it.value }
+                    .filter { days.contains(it.atZone(zone).dayOfWeek) }
+                    .iterator()
 
-                return collect(from = instants.iterator(), collected = emptyList())
-            }
+                val found = if (matching.hasNext()) matching.next() else null
 
-            private fun scheduleInstants(step: Interval): Sequence<Instant> = sequence {
-                val zone = ZoneId.systemDefault()
-                var lastInstant = start
-
-                while (true) {
-                    yield(lastInstant)
-                    lastInstant = (lastInstant.atZone(zone).plus(step.amount())).toInstant()
+                return when {
+                    found == null -> emptyList()
+                    found.isAfter(withinEnd) -> listOf(found)
+                    else -> listOf(found) + matching.asSequence().takeWhile { !it.isAfter(withinEnd) }
                 }
             }
+
+            private fun firstInstantAfter(after: Instant, zone: ZoneId): Instant? {
+                val step = every
+
+                val skipped = when {
+                    step is Interval.DurationInterval && (step.value.isZero || step.value.isNegative) -> return null
+                    step is Interval.DurationInterval && step.value.nano == 0 && !start.isAfter(after) ->
+                        (after.epochSecond - start.epochSecond) / step.value.seconds
+                    else -> 0L
+                }
+
+                val skippedStart = when (step) {
+                    is Interval.DurationInterval -> start.plus(step.value.multipliedBy(skipped))
+                    is Interval.PeriodInterval -> start
+                }
+
+                return generateSequence(skippedStart) { it.nextInstant(zone) }.firstOrNull { it.isAfter(after) }
+            }
+
+            private fun Instant.nextInstant(zone: ZoneId): Instant? =
+                runCatching { atZone(zone).plus(every.amount()).toInstant() }.getOrNull()
 
             sealed class Interval {
                 abstract fun amount(): TemporalAmount
@@ -112,6 +128,10 @@ data class Task(
             }
 
             companion object {
+                private val SearchHorizon: Period = Period.ofYears(10)
+
+                private const val MinSearchCandidates: Int = 4800
+
                 val DefaultDays: Set<DayOfWeek> = setOf(
                     DayOfWeek.MONDAY,
                     DayOfWeek.TUESDAY,

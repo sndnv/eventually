@@ -7,10 +7,12 @@ import eventually.client.scheduling.SchedulerService
 
 class SystemStartedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            context.startForegroundService(
-                Intent(context, SchedulerService::class.java)
-            )
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            val service = Intent(context, SchedulerService::class.java).apply {
+                action = SchedulerService.ActionPruneNotifications
+            }
+
+            context.startForegroundService(service)
         }
     }
 }

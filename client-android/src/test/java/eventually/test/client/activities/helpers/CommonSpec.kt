@@ -1,14 +1,9 @@
 package eventually.test.client.activities.helpers
 
 import android.content.Context
-import android.graphics.Typeface
-import android.text.style.StyleSpan
 import androidx.test.core.app.ApplicationProvider
-import eventually.client.activities.helpers.Common.StyledString
-import eventually.client.activities.helpers.Common.asChronoUnit
 import eventually.client.activities.helpers.Common.asQuantityString
 import eventually.client.activities.helpers.Common.asString
-import eventually.client.activities.helpers.Common.renderAsSpannable
 import eventually.client.activities.helpers.Common.toFields
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import org.hamcrest.CoreMatchers.equalTo
@@ -67,6 +62,18 @@ class CommonSpec {
     fun convertIntervalsToFields() {
         assertThat(Duration.ofSeconds(21).toInterval().toFields(), equalTo(Pair(21, ChronoUnit.SECONDS)))
         assertThat(Period.ofMonths(42).toInterval().toFields(), equalTo(Pair(42, ChronoUnit.MONTHS)))
+        assertThat(Period.ofDays(1).toInterval().toFields(), equalTo(Pair(1, ChronoUnit.DAYS)))
+        assertThat(Duration.ofHours(24).toInterval().toFields(), equalTo(Pair(24, ChronoUnit.HOURS)))
+        assertThat(Duration.ofDays(3).toInterval().toFields(), equalTo(Pair(72, ChronoUnit.HOURS)))
+        assertThat(Duration.ofMinutes(90).toInterval().toFields(), equalTo(Pair(90, ChronoUnit.MINUTES)))
+    }
+
+    @Test
+    fun convertDurationsToFieldsWithoutDays() {
+        assertThat(Duration.ofHours(24).toFields(withDays = false), equalTo(Pair(24, ChronoUnit.HOURS)))
+        assertThat(Duration.ofHours(25).toFields(withDays = false), equalTo(Pair(25, ChronoUnit.HOURS)))
+        assertThat(Duration.ofMinutes(60).toFields(withDays = false), equalTo(Pair(1, ChronoUnit.HOURS)))
+        assertThat(Duration.ofSeconds(61).toFields(withDays = false), equalTo(Pair(61, ChronoUnit.SECONDS)))
     }
 
     @Test
@@ -114,25 +121,6 @@ class CommonSpec {
     }
 
     @Test
-    fun convertStringsToChronoUnits() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-
-        assertThat("years".asChronoUnit(context), equalTo(ChronoUnit.YEARS))
-        assertThat("months".asChronoUnit(context), equalTo(ChronoUnit.MONTHS))
-        assertThat("days".asChronoUnit(context), equalTo(ChronoUnit.DAYS))
-        assertThat("hours".asChronoUnit(context), equalTo(ChronoUnit.HOURS))
-        assertThat("minutes".asChronoUnit(context), equalTo(ChronoUnit.MINUTES))
-        assertThat("seconds".asChronoUnit(context), equalTo(ChronoUnit.SECONDS))
-
-        try {
-            "other".asChronoUnit(context)
-            fail("Unexpected result received")
-        } catch (e: java.lang.IllegalArgumentException) {
-            assertThat(e.message, equalTo("Unexpected ChronoUnit string provided: [other]"))
-        }
-    }
-
-    @Test
     fun convertDaysOfTheWeekToStrings() {
         val someDays = setOf(DayOfWeek.TUESDAY, DayOfWeek.SUNDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY)
         val allDays = someDays + setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY)
@@ -148,34 +136,5 @@ class CommonSpec {
         assertThat(someDays.asString(DayOfWeek.SUNDAY), equalTo("Sun, Tue, Fri, Sat"))
         assertThat(allDays.asString(DayOfWeek.SUNDAY), equalTo("Sun, Mon, Tue, Wed, Thu, Fri, Sat"))
         assertThat(emptySet<DayOfWeek>().asString(DayOfWeek.SUNDAY), equalTo(""))
-    }
-
-    @Test
-    fun renderSpannableStrings() {
-        val rendered = "%1\$s | %2\$s | %3\$s".renderAsSpannable(
-            StyledString(
-                placeholder = "%1\$s",
-                content = "test-1",
-                style = StyleSpan(Typeface.BOLD_ITALIC)
-            ),
-            StyledString(
-                placeholder = "%2\$s",
-                content = "test-2",
-                style = StyleSpan(Typeface.ITALIC)
-            ),
-            StyledString(
-                placeholder = "%3\$s",
-                content = "test-3",
-                style = StyleSpan(Typeface.BOLD)
-            )
-        )
-
-        val spans = rendered.getSpans(1, rendered.length, StyleSpan::class.java)
-
-        assertThat(rendered.toString(), equalTo("test-1 | test-2 | test-3"))
-        assertThat(spans.size, equalTo(3))
-        assertThat(spans[0].style, equalTo(Typeface.BOLD_ITALIC))
-        assertThat(spans[1].style, equalTo(Typeface.ITALIC))
-        assertThat(spans[2].style, equalTo(Typeface.BOLD))
     }
 }

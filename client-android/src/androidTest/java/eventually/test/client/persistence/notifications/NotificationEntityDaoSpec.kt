@@ -44,6 +44,16 @@ class NotificationEntityDaoSpec {
     }
 
     @Test
+    fun retrieveAllNotificationEntities() {
+        withDao { dao ->
+            assertThat(runBlocking { dao.getAll() }, equalTo(emptyList()))
+
+            runBlocking { dao.put(entity) }
+            assertThat(runBlocking { dao.getAll() }, equalTo(listOf(entity)))
+        }
+    }
+
+    @Test
     fun retrieveNotificationEntitiesBasedOnQuery() {
         withDao { dao ->
             assertThat(dao.get().await(), equalTo(emptyList()))

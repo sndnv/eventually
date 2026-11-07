@@ -35,6 +35,7 @@ class TaskInstanceSpec : WordSpec({
 
             val updated = instance.postponed(by = postponedDuration)
             updated.instant shouldNotBe (instant)
+            updated.instant.nano shouldBe (0)
             updated.postponed shouldBe (postponedDuration)
         }
 

@@ -12,6 +12,9 @@ interface NotificationEntityDao {
     @Query("SELECT * FROM notifications")
     fun get(): LiveData<List<NotificationEntity>>
 
+    @Query("SELECT * FROM notifications")
+    suspend fun getAll(): List<NotificationEntity>
+
     @Query("SELECT * FROM notifications WHERE task == :task AND instance == :instance AND type == :type LIMIT 1")
     suspend fun get(task: Int, instance: UUID, type: String): NotificationEntity?
 

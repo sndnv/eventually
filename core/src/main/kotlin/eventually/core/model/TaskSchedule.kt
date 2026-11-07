@@ -9,22 +9,19 @@ data class TaskSchedule(
     val instances: Map<UUID, TaskInstance>,
     val dismissed: List<Instant>
 ) {
-    fun update(after: Instant, within: Duration): TaskSchedule {
-        fun requireNextInstants(after: Instant): List<Instant> {
-            val nextInstants = task.schedule.next(after, within)
-            require(nextInstants.isNotEmpty()) {
-                "At least one next instant expected for task [${task.id} / ${task.name}]"
-            }
-            return nextInstants
-        }
-
-        val latestInstance = instances.values.maxByOrNull { it.instant }
-        var nextInstants = requireNextInstants(after)
-
+    fun update(
+        after: Instant,
+        within: Duration,
+        retention: Duration = TaskSummaryConfig.DefaultDismissedRetention,
+        limit: Int = TaskSummaryConfig.DefaultDismissedLimit
+    ): TaskSchedule {
         return if (task.isActive) {
+            val latestInstance = instances.values.maxByOrNull { it.instant }
+            var nextInstants = task.schedule.next(after, within)
+
             val collected: List<Instant>
             while (true) {
-                val last = nextInstants.last()
+                val last = nextInstants.lastOrNull()
 
                 val filtered = nextInstants.filter { next ->
                     !dismissed.contains(next)
@@ -32,8 +29,11 @@ data class TaskSchedule(
                             && latestInstance?.let { next.isAfter(it.instant) } ?: true
                 }
 
-                if (task.schedule is Task.Schedule.Repeating && instances.isEmpty() && filtered.isEmpty()) {
-                    nextInstants = requireNextInstants(after = last).take(1)
+                val repeating = task.schedule is Task.Schedule.Repeating
+                val searchFurther = repeating && instances.isEmpty() && filtered.isEmpty()
+
+                if (searchFurther && last != null) {
+                    nextInstants = task.schedule.next(after = last, within = within).take(1)
                 } else {
                     collected = filtered
                     break
@@ -45,11 +45,28 @@ data class TaskSchedule(
                 .associateBy { it.id }
 
             copy(
-                instances = instances + nextInstances
+                instances = instances + nextInstances,
+                dismissed = if (task.schedule is Task.Schedule.Repeating) {
+                    trimmedDismissed(after, retention, limit)
+                } else {
+                    dismissed
+                }
             )
         } else {
             this
         }
+    }
+
+    private fun trimmedDismissed(after: Instant, retention: Duration, limit: Int): List<Instant> {
+        val oldest = runCatching { after.minus(retention) }.getOrDefault(Instant.MIN)
+
+        return dismissed
+            .withIndex()
+            .filterNot { it.value.isBefore(oldest) }
+            .sortedByDescending { it.value }
+            .filterIndexed { rank, entry -> rank < limit || entry.value.isAfter(after) }
+            .sortedBy { it.index }
+            .map { it.value }
     }
 
     fun next(after: Instant): List<Pair<TaskInstance, Instant>> {
@@ -72,9 +89,18 @@ data class TaskSchedule(
         )
     }
 
+    fun canUndoDismiss(instant: Instant): Boolean =
+        dismissed.contains(instant) || isRestorable(instant)
+
+    private fun isRestorable(instant: Instant): Boolean =
+        task.schedule is Task.Schedule.Repeating &&
+                !instant.isAfter(Instant.now()) &&
+                instances.values.none { it.instant == instant }
+
     fun undoDismiss(instant: Instant): TaskSchedule {
-        require(dismissed.contains(instant)) {
-            "Cannot undo dismissal with [$instant] for task [${task.id} / ${task.name}]; instant does not exist"
+        require(canUndoDismiss(instant)) {
+            "Cannot undo dismissal with [$instant] for task [${task.id} / ${task.name}]; " +
+                    "instant is not dismissed or already has an instance"
         }
 
         val instance = TaskInstance(instant)

@@ -4,14 +4,14 @@
     <color name="primary_dark">#34515e</color>
     <color name="secondary">#03DAC5</color>
 
+    <color name="window_background">#FFFFFF</color>
+
     <color name="divider">#BEBEBE</color>
-    <color name="input_stroke">#FFA1A1A1</color>
     <color name="calendar_event">#FF6D00</color>
 
     <color name="button_delete">#B00020</color>
     <color name="button_delete_icon">#FFF</color>
 
     <!-- day selector colors -->
-    <color name="dayPressed">@color/primary_dark</color>
     <color name="daySelected">@color/primary</color>
 </resources>

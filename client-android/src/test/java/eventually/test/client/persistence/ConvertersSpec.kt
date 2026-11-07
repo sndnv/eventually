@@ -493,6 +493,31 @@ class ConvertersSpec {
     }
 
     @Test
+    fun acceptDataExportsWithinMaxDuration() {
+        val export = exportWith(every = """{"unit":"years","amount":100}""", contextSwitch = 3155695200L)
+
+        assertThat(
+            Converters.stringToDataExport(export).tasks.map { it.contextSwitch },
+            equalTo(listOf(Duration.ofSeconds(3155695200L)))
+        )
+    }
+
+    @Test
+    fun rejectDataExportsExceedingMaxDuration() {
+        listOf(
+            exportWith(every = """{"unit":"years","amount":101}"""),
+            exportWith(every = """{"unit":"months","amount":1201}"""),
+            exportWith(every = """{"unit":"days","amount":36525}"""),
+            exportWith(every = """{"unit":"seconds","amount":3155695201}"""),
+            exportWith(every = """{"unit":"years","amount":999999999}"""),
+            exportWith(every = """{"unit":"years","amount":4294967297}"""),
+            exportWith(contextSwitch = 3155695201L)
+        ).forEach { export ->
+            assertThat(runCatching { Converters.stringToDataExport(export) }.isFailure, equalTo(true))
+        }
+    }
+
+    @Test
     fun convertLegacyDataExportsV1toV2() {
         val start = LocalTime.of(0, 15).atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
 
@@ -557,5 +582,13 @@ class ConvertersSpec {
         )
 
         assertThat(Converters.stringToDataExport(export), equalTo(expected))
+    }
+
+    private fun exportWith(every: String = """{"unit":"days","amount":1}""", contextSwitch: Long = 300): String {
+        val task = """{"id":42,"name":"test-task","description":"","goal":"test-goal",""" +
+            """"schedule":{"type":"repeating","start":0,"every":$every,"days":[1]},""" +
+            """"context_switch":$contextSwitch,"is_active":true}"""
+
+        return """{"tasks":[$task],"schedules":[],"notifications":[]}"""
     }
 }

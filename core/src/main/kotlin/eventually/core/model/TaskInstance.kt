@@ -2,6 +2,7 @@ package eventually.core.model
 
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 data class TaskInstance(
@@ -16,7 +17,7 @@ data class TaskInstance(
 
         return if (execution().isBefore(now)) {
             copy(
-                instant = Instant.now(),
+                instant = now.truncatedTo(ChronoUnit.SECONDS),
                 postponed = by
             )
         } else {

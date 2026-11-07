@@ -8,15 +8,16 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import androidx.core.app.NotificationCompat
-import androidx.preference.PreferenceManager
 import eventually.client.R
-import eventually.client.activities.TaskDetailsActivity
+import eventually.client.activities.MainActivity
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
 import eventually.client.activities.receivers.DismissReceiver
 import eventually.client.activities.receivers.PostponeReceiver
+import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.serialization.Extras.putDuration
 import eventually.client.serialization.Extras.putInstanceId
 import eventually.client.serialization.Extras.putTaskId
+import eventually.client.settings.Settings.defaultPreferences
 import eventually.client.settings.Settings.getPostponeLength
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
@@ -110,11 +111,22 @@ object NotificationManagerExtensions {
         cancel(getLegacyInstanceNotificationId(task, instance))
     }
 
+    suspend fun NotificationManager.pruneInstanceNotifications(notificationRepository: NotificationRepository) {
+        val active = activeNotifications.map { it.id }.toSet()
+
+        notificationRepository.all()
+            .filterNot { notification ->
+                getInstanceNotificationId(notification.task, notification.instance) in active ||
+                    getLegacyInstanceNotificationId(notification.task, notification.instance) in active
+            }
+            .forEach { notificationRepository.delete(it.id) }
+    }
+
     fun createForegroundServiceNotification(
         context: Context,
         config: Config = Config.Default
     ): Pair<Int, Notification> {
-        val pendingIntent: PendingIntent = Intent(context, SchedulerService::class.java).let {
+        val pendingIntent: PendingIntent = Intents.createMainIntent(context).let {
             PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_IMMUTABLE)
         }
 
@@ -165,11 +177,13 @@ object NotificationManagerExtensions {
     }
 
     object Intents {
+        fun createMainIntent(context: Context): Intent =
+            Intent(context, MainActivity::class.java).addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+
         fun createTaskDetailsIntent(context: Context, task: Task, instance: TaskInstance): PendingIntent {
-            val intent = Intent(
-                context,
-                TaskDetailsActivity::class.java
-            ).apply { putTaskId(TaskDetailsActivity.ExtraTask, task.id) }
+            val intent = createMainIntent(context).apply { putTaskId(MainActivity.ExtraTask, task.id) }
 
             return PendingIntent.getActivity(
                 context,
@@ -196,7 +210,7 @@ object NotificationManagerExtensions {
                 context,
                 getInstanceNotificationId(task, instance) + PostponeInstanceRequestCode,
                 Intent(PostponeReceiver.Action).apply {
-                    val by = PreferenceManager.getDefaultSharedPreferences(context).getPostponeLength()
+                    val by = context.defaultPreferences().getPostponeLength()
                     putTaskId(PostponeReceiver.ExtraTask, task.id)
                     putInstanceId(PostponeReceiver.ExtraInstance, instance.id)
                     putDuration(PostponeReceiver.ExtraBy, by)

@@ -51,7 +51,7 @@ class SchedulerServiceSpec {
         assertThat(
             context.createIntent(SchedulerService.ActionPut) {
                 it.putTask(SchedulerService.ActionPutExtraTask, task)
-            }.toSchedulerMessage(::requireConfig, ::reload),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
             equalTo(
                 SchedulerOps.Message.Put(task)
             )
@@ -60,7 +60,7 @@ class SchedulerServiceSpec {
         assertThat(
             context.createIntent(SchedulerService.ActionDelete) {
                 it.putTaskId(SchedulerService.ActionDeleteExtraTask, task.id)
-            }.toSchedulerMessage(::requireConfig, ::reload),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
             equalTo(
                 SchedulerOps.Message.Delete(task.id)
             )
@@ -70,7 +70,7 @@ class SchedulerServiceSpec {
             context.createIntent(SchedulerService.ActionDismiss) {
                 it.putTaskId(SchedulerService.ActionDismissExtraTask, task.id)
                 it.putInstanceId(SchedulerService.ActionDismissExtraInstance, instance.id)
-            }.toSchedulerMessage(::requireConfig, ::reload),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
             equalTo(
                 SchedulerOps.Message.Dismiss(task.id, instance.id)
             )
@@ -80,7 +80,7 @@ class SchedulerServiceSpec {
             context.createIntent(SchedulerService.ActionUndoDismiss) {
                 it.putTaskId(SchedulerService.ActionUndoDismissExtraTask, task.id)
                 it.putInstant(SchedulerService.ActionUndoDismissExtraInstant, instance.instant)
-            }.toSchedulerMessage(::requireConfig, ::reload),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
             equalTo(
                 SchedulerOps.Message.UndoDismiss(task.id, instance.instant)
             )
@@ -91,14 +91,14 @@ class SchedulerServiceSpec {
                 it.putTaskId(SchedulerService.ActionPostponeExtraTask, task.id)
                 it.putInstanceId(SchedulerService.ActionPostponeExtraInstance, instance.id)
                 it.putDuration(SchedulerService.ActionPostponeExtraBy, postponeBy)
-            }.toSchedulerMessage(::requireConfig, ::reload),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
             equalTo(
                 SchedulerOps.Message.Postpone(task.id, instance.id, postponeBy)
             )
         )
 
         assertThat(
-            context.createIntent(SchedulerService.ActionEvaluate) { it }.toSchedulerMessage(::requireConfig, ::reload),
+            context.createIntent(SchedulerService.ActionEvaluate) { it }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
             equalTo(
                 SchedulerOps.Message.Evaluate(config)
             )
@@ -107,18 +107,26 @@ class SchedulerServiceSpec {
         val reloaded = AtomicBoolean(false)
         assertThat(
             context.createIntent(SchedulerService.ActionReload) { it }
-                .toSchedulerMessage(::requireConfig, reloadData = { reloaded.set(true) }),
+                .toSchedulerMessage(::requireConfig, reloadData = { reloaded.set(true) }, pruneNotifications = ::prune),
             equalTo(null)
         )
         assertThat(reloaded.get(), equalTo(true))
 
+        val pruned = AtomicBoolean(false)
         assertThat(
-            null.toSchedulerMessage(::requireConfig, ::reload),
+            context.createIntent(SchedulerService.ActionPruneNotifications) { it }
+                .toSchedulerMessage(::requireConfig, ::reload, pruneNotifications = { pruned.set(true) }),
+            equalTo(null)
+        )
+        assertThat(pruned.get(), equalTo(true))
+
+        assertThat(
+            null.toSchedulerMessage(::requireConfig, ::reload, ::prune),
             equalTo(null)
         )
 
         try {
-            context.createIntent("other") { it }.toSchedulerMessage(::requireConfig, ::reload)
+            context.createIntent("other") { it }.toSchedulerMessage(::requireConfig, ::reload, ::prune)
             fail("Excepted failure but none encountered")
         } catch (e: IllegalArgumentException) {
             assertThat(e.message, equalTo("Unexpected action encountered: [other]"))
@@ -131,9 +139,11 @@ class SchedulerServiceSpec {
         coEvery { repo.put(task) } returns task.id.toLong()
         coEvery { repo.delete(task.id) } returns Unit
 
+        val scheduleRepo = mockk<TaskScheduleRepository>()
+
         runBlocking {
             assertThat(
-                Message().apply { obj = SchedulerOps.Message.Put(task) }.handle(emptyMap(), repo),
+                Message().apply { obj = SchedulerOps.Message.Put(task) }.handle(emptyMap(), repo, scheduleRepo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(Pair(task.id, TaskSchedule(task))),
@@ -146,7 +156,7 @@ class SchedulerServiceSpec {
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Delete(task.id) }
-                    .handle(mapOf(Pair(task.id, TaskSchedule(task))), repo),
+                    .handle(mapOf(Pair(task.id, TaskSchedule(task))), repo, scheduleRepo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = emptyMap(),
@@ -159,7 +169,7 @@ class SchedulerServiceSpec {
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Dismiss(task.id, instance.id) }
-                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), repo),
+                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), repo, scheduleRepo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(
@@ -178,7 +188,7 @@ class SchedulerServiceSpec {
             )
 
             val undoResult = Message().apply { obj = SchedulerOps.Message.UndoDismiss(task.id, instance.instant) }
-                .handle(mapOf(Pair(task.id, TaskSchedule(task, emptyMap(), listOf(instance.instant)))), repo)
+                .handle(mapOf(Pair(task.id, TaskSchedule(task, emptyMap(), listOf(instance.instant)))), repo, scheduleRepo)
             val newInstance = undoResult?.schedules?.values?.first()?.instances?.values?.first()!!
             assertThat(
                 undoResult,
@@ -199,7 +209,7 @@ class SchedulerServiceSpec {
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Postpone(task.id, instance.id, postponeBy) }
-                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), repo),
+                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), repo, scheduleRepo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(
@@ -218,13 +228,18 @@ class SchedulerServiceSpec {
             )
 
             assertThat(
-                Message().apply { obj = SchedulerOps.Message.Evaluate(config) }.handle(emptyMap(), repo),
+                Message().apply { obj = SchedulerOps.Message.Evaluate(config) }.handle(emptyMap(), repo, scheduleRepo),
+                equalTo(null)
+            )
+
+            assertThat(
+                Message().apply { obj = SchedulerService.PruneNotifications }.handle(emptyMap(), repo, scheduleRepo),
                 equalTo(null)
             )
 
             assertThat(
                 Message().apply { obj = SchedulerOps.Message.Init(tasks = listOf(task), schedules = emptyList()) }
-                    .handle(emptyMap(), repo),
+                    .handle(emptyMap(), repo, scheduleRepo),
                 equalTo(
                     SchedulerOps.SchedulerResult(
                         schedules = mapOf(Pair(task.id, TaskSchedule(task))),
@@ -236,7 +251,7 @@ class SchedulerServiceSpec {
             )
 
             try {
-                Message().apply { obj = "other" }.handle(emptyMap(), repo)
+                Message().apply { obj = "other" }.handle(emptyMap(), repo, scheduleRepo)
                 fail("Excepted failure but none encountered")
             } catch (e: IllegalArgumentException) {
                 assertThat(e.message, equalTo("Unexpected message encountered: [other]"))
@@ -245,6 +260,42 @@ class SchedulerServiceSpec {
             coVerify(exactly = 1) { repo.put(any()) }
             coVerify(exactly = 1) { repo.delete(any()) }
             confirmVerified(repo)
+            confirmVerified(scheduleRepo)
+        }
+    }
+
+    @Test
+    fun loadDataWhenHandlingLoadMessages() {
+        runBlocking {
+            val instance = TaskInstance(instant = Instant.now().truncatedTo(ChronoUnit.SECONDS))
+            val existingSchedule = TaskScheduleEntity(
+                task = task.id,
+                instances = mapOf(instance.id to instance),
+                dismissed = emptyList()
+            )
+
+            val taskRepo = mockk<TaskRepository>()
+            coEvery { taskRepo.all() } returns listOf(task)
+
+            val scheduleRepo = mockk<TaskScheduleRepository>()
+            coEvery { scheduleRepo.all() } returns listOf(existingSchedule)
+
+            assertThat(
+                Message().apply { obj = SchedulerService.Load }.handle(emptyMap(), taskRepo, scheduleRepo),
+                equalTo(
+                    SchedulerOps.SchedulerResult(
+                        schedules = mapOf(task.id to TaskSchedule(task, existingSchedule.instances, emptyList())),
+                        notifications = emptyList(),
+                        summary = null,
+                        affectedSchedules = emptyList()
+                    )
+                )
+            )
+
+            coVerify(exactly = 1) { taskRepo.all() }
+            coVerify(exactly = 1) { scheduleRepo.all() }
+            confirmVerified(taskRepo)
+            confirmVerified(scheduleRepo)
         }
     }
 
@@ -337,6 +388,8 @@ class SchedulerServiceSpec {
     private fun requireConfig(): TaskSummaryConfig = config
 
     private fun reload() = Unit
+
+    private fun prune() = Unit
 
     private val config = TaskSummaryConfig(summarySize = Duration.ofMinutes(15))
 

@@ -1,38 +1,11 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
 
-    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="colorAccent">@color/secondary</item>
-        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
-    </style>
+    <style name="Base.AppTheme" parent="android:Theme.Material.Light.NoActionBar" />
 
-    <style name="DayChip" parent="Widget.MaterialComponents.Chip.Filter">
-        <item name="chipBackgroundColor">@color/day_chip_background</item>
-        <item name="android:textColor">@color/day_chip_text</item>
-        <item name="android:gravity">center</item>
-        <item name="android:textAlignment">center</item>
-        <item name="rippleColor">@color/dayPressed</item>
-        <item name="checkedIconVisible">false</item>
-        <item name="chipIconVisible">false</item>
-        <item name="closeIconVisible">false</item>
-        <item name="ensureMinTouchTargetSize">false</item>
-        <item name="chipMinHeight">40dp</item>
-        <item name="chipCornerRadius">20dp</item>
-        <item name="chipStartPadding">0dp</item>
-        <item name="chipEndPadding">0dp</item>
-        <item name="textStartPadding">0dp</item>
-        <item name="textEndPadding">0dp</item>
-    </style>
-
-    <style name="IconOnlyButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
-        <item name="iconGravity">textStart</item>
-        <item name="rippleColor">@color/primary</item>
-        <item name="strokeColor">@android:color/transparent</item>
-        <item name="android:shadowColor">@android:color/transparent</item>
-        <item name="android:insetTop">0dp</item>
-        <item name="android:insetBottom">0dp</item>
-        <item name="android:insetLeft">0dp</item>
-        <item name="android:insetRight">0dp</item>
+    <style name="AppTheme" parent="Base.AppTheme">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/primary_dark</item>
+        <item name="android:colorAccent">@color/secondary</item>
+        <item name="android:windowBackground">@color/window_background</item>
     </style>
 </resources>
