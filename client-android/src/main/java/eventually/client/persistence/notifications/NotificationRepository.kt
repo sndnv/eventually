@@ -10,6 +10,8 @@ import java.util.UUID
 class NotificationRepository(private val dao: NotificationEntityDao) {
     val notifications: LiveData<List<NotificationEntity>> = dao.get()
 
+    suspend fun all(): List<NotificationEntity> = dao.getAll()
+
     suspend fun put(task: Task, instance: TaskInstance, type: String): Long =
         put((task to instance).asNotificationEntity(type))
 

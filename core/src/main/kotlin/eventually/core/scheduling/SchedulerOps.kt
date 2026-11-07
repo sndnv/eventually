@@ -139,7 +139,7 @@ object SchedulerOps {
 
     fun undoDismiss(schedules: Map<Int, TaskSchedule>, msg: Message.UndoDismiss): SchedulerResult {
         val schedule = schedules[msg.task]
-        return if (schedule != null && msg.instant in schedule.dismissed) {
+        return if (schedule != null && schedule.canUndoDismiss(msg.instant)) {
             val updated = schedules + (msg.task to schedule.undoDismiss(msg.instant))
 
             SchedulerResult(
@@ -195,7 +195,14 @@ object SchedulerOps {
 
         val now = Instant.now()
 
-        val updated = schedules.mapValues { it.value.update(after = now, within = msg.config.summarySize) }
+        val updated = schedules.mapValues {
+            it.value.update(
+                after = now,
+                within = msg.config.summarySize,
+                retention = msg.config.dismissedRetention,
+                limit = msg.config.dismissedLimit
+            )
+        }
 
         updated.forEach { (_, schedule) ->
             schedule.match(instant = now, withTolerance = SchedulingTolerance).map {

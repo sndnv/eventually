@@ -1,20 +1,27 @@
 package eventually.test.client.settings
 
+import android.content.Context
 import android.content.SharedPreferences
+import androidx.test.core.app.ApplicationProvider
 import eventually.client.settings.Settings
+import eventually.client.settings.Settings.defaultPreferences
 import eventually.client.settings.Settings.getDateTimeFormat
+import eventually.client.settings.Settings.getDismissedLimit
+import eventually.client.settings.Settings.getDismissedRetention
 import eventually.client.settings.Settings.getFirstDayOfWeek
 import eventually.client.settings.Settings.getPostponeLength
 import eventually.client.settings.Settings.getShowAllInstances
 import eventually.client.settings.Settings.getStatsEnabled
+import eventually.client.settings.Settings.getSummaryConfig
 import eventually.client.settings.Settings.getSummaryMaxTasks
 import eventually.client.settings.Settings.getSummarySize
-import eventually.client.settings.Settings.toCalendarDay
 import eventually.client.settings.Settings.toDayOfWeek
+import eventually.core.model.TaskSummaryConfig
 import io.mockk.every
 import io.mockk.mockk
 import org.hamcrest.CoreMatchers.anyOf
 import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.CoreMatchers.sameInstance
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Assert
 import org.junit.Test
@@ -28,6 +35,24 @@ import java.util.Calendar
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Config.OLDEST_SDK])
 class SettingsSpec {
+    @Test
+    fun useDefaultPreferencesFile() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        @Suppress("DEPRECATION")
+        val platformDefault = android.preference.PreferenceManager.getDefaultSharedPreferences(context)
+
+        assertThat(context.defaultPreferences(), sameInstance(platformDefault))
+
+        context.defaultPreferences().edit().putString(Settings.Keys.SummaryMaxTasks, "9").commit()
+
+        assertThat(
+            context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
+                .getString(Settings.Keys.SummaryMaxTasks, null),
+            equalTo("9")
+        )
+    }
+
     @Test
     fun supportParsingDateTimeFormats() {
         assertThat(Settings.parseDateTimeFormat(format = "system"), equalTo((Settings.DateTimeFormat.System)))
@@ -72,17 +97,6 @@ class SettingsSpec {
         } catch (e: IllegalArgumentException) {
             assertThat(e.message, equalTo("Unexpected day of the week found: [42]"))
         }
-    }
-
-    @Test
-    fun supportConvertingDayOfWeekToCalendarDays() {
-        assertThat(DayOfWeek.MONDAY.toCalendarDay(), equalTo(Calendar.MONDAY))
-        assertThat(DayOfWeek.TUESDAY.toCalendarDay(), equalTo(Calendar.TUESDAY))
-        assertThat(DayOfWeek.WEDNESDAY.toCalendarDay(), equalTo(Calendar.WEDNESDAY))
-        assertThat(DayOfWeek.THURSDAY.toCalendarDay(), equalTo(Calendar.THURSDAY))
-        assertThat(DayOfWeek.FRIDAY.toCalendarDay(), equalTo(Calendar.FRIDAY))
-        assertThat(DayOfWeek.SATURDAY.toCalendarDay(), equalTo(Calendar.SATURDAY))
-        assertThat(DayOfWeek.SUNDAY.toCalendarDay(), equalTo(Calendar.SUNDAY))
     }
 
     @Test
@@ -137,6 +151,76 @@ class SettingsSpec {
 
         val expectedPostponeLength = Duration.ofMinutes(42)
         assertThat(preferences.getPostponeLength(), equalTo((expectedPostponeLength)))
+    }
+
+    @Test
+    fun supportRetrievingDefaultDismissedRetention() {
+        val preferences = mockk<SharedPreferences>()
+        every {
+            preferences.getString(Settings.Keys.DismissedRetention, Settings.Defaults.DismissedRetention)
+        } returns null
+
+        assertThat(preferences.getDismissedRetention(), equalTo(Duration.ofDays(30)))
+    }
+
+    @Test
+    fun supportRetrievingUserDefinedDismissedRetention() {
+        val preferences = mockk<SharedPreferences>()
+        every {
+            preferences.getString(Settings.Keys.DismissedRetention, Settings.Defaults.DismissedRetention)
+        } returns "42"
+
+        assertThat(preferences.getDismissedRetention(), equalTo(Duration.ofDays(42)))
+    }
+
+    @Test
+    fun supportRetrievingDefaultDismissedLimit() {
+        val preferences = mockk<SharedPreferences>()
+        every { preferences.getString(Settings.Keys.DismissedLimit, Settings.Defaults.DismissedLimit) } returns null
+
+        assertThat(preferences.getDismissedLimit(), equalTo(100))
+    }
+
+    @Test
+    fun supportRetrievingUserDefinedDismissedLimit() {
+        val preferences = mockk<SharedPreferences>()
+        every { preferences.getString(Settings.Keys.DismissedLimit, Settings.Defaults.DismissedLimit) } returns "42"
+
+        assertThat(preferences.getDismissedLimit(), equalTo(42))
+    }
+
+    @Test
+    fun supportRetrievingTheSummaryConfig() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val preferences = context.defaultPreferences()
+
+        assertThat(
+            preferences.getSummaryConfig(),
+            equalTo(
+                TaskSummaryConfig(
+                    summarySize = Duration.ofMinutes(15),
+                    dismissedRetention = Duration.ofDays(30),
+                    dismissedLimit = 100
+                )
+            )
+        )
+
+        preferences.edit()
+            .putString(Settings.Keys.SummarySize, "60")
+            .putString(Settings.Keys.DismissedRetention, "7")
+            .putString(Settings.Keys.DismissedLimit, "5")
+            .commit()
+
+        assertThat(
+            preferences.getSummaryConfig(),
+            equalTo(
+                TaskSummaryConfig(
+                    summarySize = Duration.ofMinutes(60),
+                    dismissedRetention = Duration.ofDays(7),
+                    dismissedLimit = 5
+                )
+            )
+        )
     }
 
     @Test

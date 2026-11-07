@@ -1,17 +1,21 @@
+import java.time.Duration
+
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
 
 android {
     namespace = "eventually.client"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "eventually.client"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 3
         versionName = "1.1.1-SNAPSHOT"
 
@@ -33,9 +37,8 @@ android {
     }
 
     buildFeatures {
-        dataBinding = true
-        viewBinding = true
         buildConfig = true
+        compose = true
     }
 
     compileOptions {
@@ -60,26 +63,29 @@ dependencies {
     implementation(project(":core"))
 
     implementation(libs.gson)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.coordinatorlayout)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.preference.ktx)
-    implementation(libs.androidx.material)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.lifecycle.common.java8)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.service)
-    implementation(libs.crunchycalendar)
-    implementation(libs.markwon.core)
-    implementation(libs.markwon.ext.strikethrough)
-    implementation(libs.markwon.ext.tables)
-    implementation(libs.markwon.ext.tasklist)
-    implementation(libs.colorpickerview)
+    implementation(libs.markdown.renderer.m3)
+
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.composepreference)
+    implementation(libs.colorpicker.compose)
+    implementation(libs.calendar.compose) {
+        exclude(group = "androidx.compose.ui", module = "ui-tooling")
+    }
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -93,6 +99,8 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.test.core)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
@@ -100,10 +108,12 @@ dependencies {
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.arch.core.testing)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+}
 
-    debugImplementation(libs.androidx.fragment.testing) {
-        exclude(group = "androidx.test", module = "monitor")
-    }
+tasks.withType<Test>().configureEach {
+    timeout.set(Duration.ofMinutes(15))
 }
 
 tasks.register("qa") {

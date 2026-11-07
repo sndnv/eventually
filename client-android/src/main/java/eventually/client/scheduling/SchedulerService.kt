@@ -16,8 +16,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import dagger.hilt.android.AndroidEntryPoint
 import eventually.client.activities.receivers.DismissReceiver
 import eventually.client.activities.receivers.PostponeReceiver
@@ -25,18 +23,19 @@ import eventually.client.persistence.Converters.Companion.asSchedule
 import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.persistence.schedules.TaskScheduleRepository
 import eventually.client.persistence.tasks.TaskRepository
+import eventually.client.scheduling.NotificationManagerExtensions.pruneInstanceNotifications
 import eventually.client.serialization.Extras.requireDuration
 import eventually.client.serialization.Extras.requireInstanceId
 import eventually.client.serialization.Extras.requireInstant
 import eventually.client.serialization.Extras.requireTask
 import eventually.client.serialization.Extras.requireTaskId
 import eventually.client.settings.Settings
-import eventually.client.settings.Settings.getSummarySize
+import eventually.client.settings.Settings.defaultPreferences
+import eventually.client.settings.Settings.getSummaryConfig
 import eventually.core.model.TaskSchedule
 import eventually.core.model.TaskSummary
 import eventually.core.model.TaskSummaryConfig
 import eventually.core.scheduling.SchedulerOps
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.time.Instant
 import javax.inject.Inject
@@ -78,8 +77,10 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
             val notifications = NotificationQueue()
 
             runBlocking {
+                if (msg.obj == PruneNotifications) notificationManager.pruneInstanceNotifications(notificationRepository)
+
                 msg
-                    .handle(schedules, taskRepository)
+                    .handle(schedules, taskRepository, taskScheduleRepository)
                     .applyTo(
                         notifications = notifications,
                         taskScheduleRepository = taskScheduleRepository,
@@ -120,7 +121,8 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         handler.obtainMessage().let { msg ->
             val obj = intent.toSchedulerMessage(
                 requireConfig = ::requireConfig,
-                reloadData = ::load
+                reloadData = ::load,
+                pruneNotifications = ::prune
             )
 
             obj?.let {
@@ -138,8 +140,8 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
     }
 
     override fun onSharedPreferenceChanged(updated: SharedPreferences, key: String?) {
-        if (key == Settings.Keys.SummarySize) {
-            config = TaskSummaryConfig(updated.getSummarySize())
+        if (key in Settings.Keys.SummaryConfig) {
+            config = updated.getSummaryConfig()
             handler.obtainMessage().let { msg ->
                 msg.obj = SchedulerOps.Message.Evaluate(config)
                 handler.sendMessage(msg)
@@ -158,10 +160,8 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
             handler = ServiceHandler(looper)
 
             if (!::config.isInitialized) {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(this@SchedulerService)
-                val summarySize = preferences.getSummarySize()
-
-                config = TaskSummaryConfig(summarySize)
+                val preferences = this@SchedulerService.defaultPreferences()
+                config = preferences.getSummaryConfig()
 
                 preferences.registerOnSharedPreferenceChangeListener(this@SchedulerService)
 
@@ -199,19 +199,26 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
     }
 
     private fun load() {
-        lifecycleScope.launch {
-            val init = loadInit(taskRepository, taskScheduleRepository)
+        handler.obtainMessage().let { msg ->
+            msg.obj = Load
+            handler.sendMessage(msg)
+        }
+    }
 
-            handler.obtainMessage().let { msg ->
-                msg.obj = init
-                handler.sendMessage(msg)
-            }
+    private fun prune() {
+        handler.obtainMessage().let { msg ->
+            msg.obj = PruneNotifications
+            handler.sendMessage(msg)
         }
     }
 
     inner class SchedulerBinder : Binder() {
         val service: SchedulerService = this@SchedulerService
     }
+
+    data object Load
+
+    data object PruneNotifications
 
     companion object {
         const val ActionPut: String = "eventually.client.scheduling.SchedulerService.Put"
@@ -239,10 +246,12 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
         const val ActionEvaluate: String = "eventually.client.scheduling.SchedulerService.Evaluate"
         const val ActionReload: String = "eventually.client.scheduling.SchedulerService.Reload"
+        const val ActionPruneNotifications: String = "eventually.client.scheduling.SchedulerService.PruneNotifications"
 
         fun Intent?.toSchedulerMessage(
             requireConfig: () -> TaskSummaryConfig,
-            reloadData: () -> Unit
+            reloadData: () -> Unit,
+            pruneNotifications: () -> Unit
         ): SchedulerOps.Message? =
             when (this?.action) {
                 ActionPut -> {
@@ -297,6 +306,13 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                     null
                 }
 
+                ActionPruneNotifications -> {
+                    requireConfig()
+
+                    pruneNotifications()
+                    null
+                }
+
                 null -> null
 
                 else -> throw IllegalArgumentException("Unexpected action encountered: [$action]")
@@ -316,9 +332,13 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
         suspend fun Message.handle(
             schedules: Map<Int, TaskSchedule>,
-            taskRepository: TaskRepository
+            taskRepository: TaskRepository,
+            taskScheduleRepository: TaskScheduleRepository
         ): SchedulerOps.SchedulerResult? =
             when (val message = obj) {
+                Load -> SchedulerOps.init(loadInit(taskRepository, taskScheduleRepository))
+                PruneNotifications -> null
+
                 is SchedulerOps.Message.Put -> {
                     val taskId = taskRepository.put(message.task)
                     SchedulerOps.put(schedules, message.copy(task = message.task.copy(id = taskId.toInt())))

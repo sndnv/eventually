@@ -11,12 +11,16 @@ import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.startWith
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.Period
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class TaskScheduleSpec : WordSpec({
     "A TaskSchedule" should {
@@ -135,6 +139,23 @@ class TaskScheduleSpec : WordSpec({
             finalSchedule.instances shouldBe (emptyMap())
         }
 
+        "not update scheduling for unreachable days".config(timeout = 5.seconds, blockingTest = true) {
+            val monday = LocalDate.of(2026, 11, 9).atTime(10, 0).atZone(ZoneId.systemDefault()).toInstant()
+
+            val unreachable = task.copy(
+                schedule = Task.Schedule.Repeating(
+                    start = monday,
+                    every = Period.ofDays(7).toInterval(),
+                    days = setOf(DayOfWeek.TUESDAY)
+                )
+            )
+
+            val schedule = TaskSchedule(unreachable).update(after = monday, within = Duration.ofDays(30))
+
+            schedule.task shouldBe (unreachable)
+            schedule.instances shouldBe (emptyMap())
+        }
+
         "support providing the next task instance" {
             val after = after()
             val within = Duration.ofMinutes(5)
@@ -227,14 +248,178 @@ class TaskScheduleSpec : WordSpec({
             newInstance.instant shouldBe (instance.instant)
         }
 
-        "fail to undo dismissal of missing task instants" {
-            val schedule = TaskSchedule(task)
+        "fail to undo dismissal of missing task instants (non-repeating schedules)" {
+            val once = task.copy(schedule = Task.Schedule.Once(instant = after()))
+            val schedule = TaskSchedule(once)
 
             val e = shouldThrow<IllegalArgumentException> {
                 schedule.undoDismiss(instant = Instant.now())
             }
 
             e.message should startWith("Cannot undo dismissal")
+        }
+
+        "fail to undo dismissal of future instants that were not dismissed (repeating schedules)" {
+            val schedule = TaskSchedule(task)
+            val future = Instant.now().plus(Duration.ofHours(1))
+
+            schedule.canUndoDismiss(future) shouldBe (false)
+
+            val e = shouldThrow<IllegalArgumentException> {
+                schedule.undoDismiss(instant = future)
+            }
+
+            e.message should startWith("Cannot undo dismissal")
+        }
+
+        "fail to undo dismissal of instants with an existing instance (repeating schedules)" {
+            val schedule = TaskSchedule(task).update(after = after(), within = Duration.ofMinutes(5))
+            val instance = schedule.instances.values.first()
+
+            val e = shouldThrow<IllegalArgumentException> {
+                schedule.undoDismiss(instant = instance.instant)
+            }
+
+            e.message should startWith("Cannot undo dismissal")
+        }
+
+        "trim dismissed instants older than the retention period (repeating schedules)" {
+            val after = after()
+
+            val schedule = TaskSchedule(
+                task = task,
+                instances = emptyMap(),
+                dismissed = listOf(
+                    after.minus(Duration.ofDays(31)),
+                    after.minus(Duration.ofDays(29)),
+                    after.minus(Duration.ofHours(1))
+                )
+            ).update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 100)
+
+            schedule.dismissed shouldBe (listOf(after.minus(Duration.ofDays(29)), after.minus(Duration.ofHours(1))))
+        }
+
+        "keep dismissed instants at the retention boundary (repeating schedules)" {
+            val after = after()
+            val boundary = after.minus(Duration.ofDays(30))
+
+            val schedule = TaskSchedule(
+                task = task,
+                instances = emptyMap(),
+                dismissed = listOf(boundary.minusMillis(1), boundary)
+            ).update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 100)
+
+            schedule.dismissed shouldBe (listOf(boundary))
+        }
+
+        "drop dismissed instants at the update instant beyond the limit (repeating schedules)" {
+            val after = after()
+            val upcoming = after.plus(Duration.ofHours(1))
+
+            val schedule = TaskSchedule(
+                task = task,
+                instances = emptyMap(),
+                dismissed = listOf(after, upcoming)
+            ).update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 1)
+
+            schedule.dismissed shouldBe (listOf(upcoming))
+        }
+
+        "keep only the newest dismissed instants up to the limit (repeating schedules)" {
+            val after = after()
+
+            val schedule = TaskSchedule(
+                task = task,
+                instances = emptyMap(),
+                dismissed = listOf(
+                    after.minus(Duration.ofHours(1)),
+                    after.minus(Duration.ofHours(3)),
+                    after.minus(Duration.ofHours(2))
+                )
+            ).update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 2)
+
+            schedule.dismissed shouldBe (listOf(after.minus(Duration.ofHours(1)), after.minus(Duration.ofHours(2))))
+        }
+
+        "keep upcoming dismissed instants regardless of the limit (repeating schedules)" {
+            val after = after()
+            val within = Duration.ofMinutes(40)
+            val upcoming = task.schedule.next(after = after, within = within)
+
+            upcoming.size shouldBe (2)
+
+            val schedule = TaskSchedule(
+                task = task,
+                instances = emptyMap(),
+                dismissed = listOf(after.minus(Duration.ofHours(1))) + upcoming
+            ).update(after = after, within = within, retention = Duration.ofDays(30), limit = 1)
+
+            schedule.dismissed shouldBe (upcoming)
+            schedule.instances.values.none { it.instant in upcoming } shouldBe (true)
+
+            val rescheduled = schedule
+                .copy(instances = emptyMap())
+                .update(after = after, within = within, retention = Duration.ofDays(30), limit = 1)
+
+            rescheduled.instances.values.none { it.instant in upcoming } shouldBe (true)
+        }
+
+        "not trim dismissed instants of non-repeating schedules" {
+            val after = after()
+            val dismissed = listOf(after.minus(Duration.ofDays(60)), after.minus(Duration.ofDays(45)))
+
+            val once = task.copy(schedule = Task.Schedule.Once(instant = dismissed.last()))
+
+            val schedule = TaskSchedule(task = once, instances = emptyMap(), dismissed = dismissed)
+                .update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 1)
+
+            schedule.dismissed shouldBe (dismissed)
+        }
+
+        "not trim dismissed instants of inactive tasks" {
+            val after = after()
+            val dismissed = listOf(after.minus(Duration.ofDays(60)), after.minus(Duration.ofDays(45)))
+
+            val inactive = task.copy(isActive = false)
+
+            val schedule = TaskSchedule(task = inactive, instances = emptyMap(), dismissed = dismissed)
+                .update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 1)
+
+            schedule.dismissed shouldBe (dismissed)
+        }
+
+        "support undoing dismissal of instants kept after trimming" {
+            val after = after()
+            val trimmed = after.minus(Duration.ofDays(31))
+            val kept = after.minus(Duration.ofHours(1))
+
+            val schedule = TaskSchedule(task = task, instances = emptyMap(), dismissed = listOf(trimmed, kept))
+                .update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 100)
+
+            schedule.dismissed shouldBe (listOf(kept))
+
+            val undone = schedule.undoDismiss(kept)
+            undone.dismissed shouldBe (emptyList())
+            undone.instances.values.any { it.instant == kept } shouldBe (true)
+        }
+
+        "support undoing dismissal of instants already trimmed (repeating schedules)" {
+            val after = after()
+            val overdue = TaskInstance(instant = after.minus(Duration.ofDays(31)))
+
+            val schedule = TaskSchedule(task = task, instances = mapOf(overdue.id to overdue), dismissed = emptyList())
+                .dismiss(overdue.id)
+                .update(after = after, within = Duration.ofMinutes(5), retention = Duration.ofDays(30), limit = 100)
+
+            schedule.dismissed shouldBe (emptyList())
+            schedule.canUndoDismiss(overdue.instant) shouldBe (true)
+
+            val undone = schedule.undoDismiss(overdue.instant)
+            undone.dismissed shouldBe (emptyList())
+            undone.instances.values.count { it.instant == overdue.instant } shouldBe (1)
+            undone.canUndoDismiss(overdue.instant) shouldBe (false)
+
+            shouldThrow<IllegalArgumentException> { undone.undoDismiss(overdue.instant) }
         }
 
         "support postponing task instances" {

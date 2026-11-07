@@ -15,6 +15,7 @@ import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.Period
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class Converters {
@@ -147,11 +148,32 @@ class Converters {
         fun stringToDataExport(export: String): DataExport {
             val json = Gson().fromJson(export, JsonObject::class.java)
 
+            val tasks = json.get("tasks").asJsonArray.map { jsonToTask(it.asJsonObject) }
+
+            tasks.forEach { task ->
+                require(task.isWithinMaxDuration()) {
+                    "Task [${task.id}] exceeds the maximum supported duration of [${Task.MaxDuration}]"
+                }
+            }
+
             return DataExport(
-                tasks = json.get("tasks").asJsonArray.map { jsonToTask(it.asJsonObject) },
+                tasks = tasks,
                 schedules = json.get("schedules").asJsonArray.map { jsonToTaskScheduleEntity(it.asJsonObject) },
                 notifications = json.get("notifications").asJsonArray.map { jsonToNotificationEntity(it.asJsonObject) }
             )
+        }
+
+        private fun Task.isWithinMaxDuration(): Boolean {
+            val every = when (val interval = (schedule as? Task.Schedule.Repeating)?.every) {
+                is Task.Schedule.Repeating.Interval.DurationInterval -> interval.value
+                is Task.Schedule.Repeating.Interval.PeriodInterval -> ChronoUnit.YEARS.duration
+                    .multipliedBy(interval.value.years.toLong())
+                    .plus(ChronoUnit.MONTHS.duration.multipliedBy(interval.value.months.toLong()))
+                    .plus(ChronoUnit.DAYS.duration.multipliedBy(interval.value.days.toLong()))
+                null -> Duration.ZERO
+            }
+
+            return contextSwitch <= Task.MaxDuration && every <= Task.MaxDuration
         }
 
         private fun taskScheduleEntityToJson(schedule: TaskScheduleEntity): JsonObject {
@@ -252,9 +274,9 @@ class Converters {
 
                 is String -> {
                     when (unit) {
-                        "days" -> Period.ofDays(amount.toInt())
-                        "months" -> Period.ofMonths(amount.toInt())
-                        "years" -> Period.ofYears(amount.toInt())
+                        "days" -> Period.ofDays(Math.toIntExact(amount))
+                        "months" -> Period.ofMonths(Math.toIntExact(amount))
+                        "years" -> Period.ofYears(Math.toIntExact(amount))
                         else -> throw IllegalArgumentException("Unexpected period unit provided: [$unit]")
                     }.toInterval()
                 }

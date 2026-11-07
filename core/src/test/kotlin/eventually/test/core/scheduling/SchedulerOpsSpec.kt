@@ -187,6 +187,43 @@ class SchedulerOpsSpec : WordSpec({
             schedulesWithInstances shouldBe (taskCount)
         }
 
+        "trim dismissed instants of repeating tasks during evaluation" {
+            val now = Instant.now()
+
+            val repeating = task.copy(
+                schedule = Task.Schedule.Repeating(
+                    start = now.plus(Duration.ofDays(1)),
+                    every = Duration.ofDays(1).toInterval()
+                )
+            )
+
+            val schedule = TaskSchedule(repeating)
+                .update(after = now, within = config.summarySize)
+                .copy(
+                    dismissed = listOf(
+                        now.minus(Duration.ofDays(3)),
+                        now.minus(Duration.ofHours(2)),
+                        now.minus(Duration.ofHours(1))
+                    )
+                )
+
+            val trimming = config.copy(dismissedRetention = Duration.ofDays(2), dismissedLimit = 1)
+
+            val result = SchedulerOps.evaluate(
+                mapOf(repeating.id to schedule),
+                SchedulerOps.Message.Evaluate(trimming)
+            )
+
+            result.schedules.values.first().instances shouldBe (schedule.instances)
+            result.schedules.values.first().dismissed shouldBe (listOf(now.minus(Duration.ofHours(1))))
+            result.affectedSchedules shouldBe (listOf(repeating.id))
+
+            val next = SchedulerOps.evaluate(result.schedules, SchedulerOps.Message.Evaluate(trimming))
+
+            next.schedules shouldBe (result.schedules)
+            next.affectedSchedules shouldBe (emptyList())
+        }
+
         "support creating new tasks" {
             val schedules = emptyMap<Int, TaskSchedule>()
 
@@ -372,6 +409,45 @@ class SchedulerOpsSpec : WordSpec({
             val newInstance = undoDismissResult.schedules.values.first().instances.values.first()
             newInstance.id shouldNotBe (instance.id)
             newInstance.instant shouldBe (instance.instant)
+        }
+
+        "undo dismissal of instants trimmed during evaluation" {
+            val now = Instant.now()
+
+            val repeating = task.copy(
+                schedule = Task.Schedule.Repeating(
+                    start = now.minus(Duration.ofDays(10)),
+                    every = Duration.ofDays(1).toInterval()
+                )
+            )
+
+            val overdue = TaskInstance(instant = now.minus(Duration.ofDays(3)))
+            val schedules = mapOf(
+                repeating.id to TaskSchedule(
+                    task = repeating,
+                    instances = mapOf(overdue.id to overdue),
+                    dismissed = emptyList()
+                )
+            )
+
+            val dismissed = SchedulerOps.dismiss(schedules, SchedulerOps.Message.Dismiss(repeating.id, overdue.id))
+            val evaluated = SchedulerOps.evaluate(
+                dismissed.schedules,
+                SchedulerOps.Message.Evaluate(config.copy(dismissedRetention = Duration.ofDays(2)))
+            )
+
+            evaluated.schedules.values.first().dismissed shouldBe (emptyList())
+
+            val undo = SchedulerOps.Message.UndoDismiss(repeating.id, instant = overdue.instant)
+            val result = SchedulerOps.undoDismiss(evaluated.schedules, undo)
+
+            result.affectedSchedules shouldBe (listOf(repeating.id))
+            result.schedules.values.first().instances.values.count { it.instant == overdue.instant } shouldBe (1)
+
+            val repeated = SchedulerOps.undoDismiss(result.schedules, undo)
+
+            repeated.schedules shouldBe (result.schedules)
+            repeated.affectedSchedules shouldBe (emptyList())
         }
 
         "do nothing when undoing dismissal of missing tasks" {

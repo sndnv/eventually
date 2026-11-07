@@ -8,6 +8,10 @@
     <string name="section_expand_tooltip">Show more</string>
     <string name="section_collapse_tooltip">Show less</string>
     <string name="search_hint">Search Tasks</string>
+    <string name="search_close_hint">Close search</string>
+    <string name="search_clear_hint">Clear search</string>
+    <string name="main_menu_hint">More options</string>
+    <string name="back_hint">Back</string>
     <string name="create_task_hint">Create Task</string>
     <string name="edit_task_hint">Edit Task</string>
     <string name="settings_hint">Settings</string>
@@ -70,6 +74,7 @@
     <string name="summary_timeline_title">Show Timeline</string>
     <string name="summary_timeline_dialog_title">Timeline - Today and Tomorrow</string>
     <string name="summary_timeline_dialog_item_text">%1$s - %2$s (%3$s)</string>
+    <string name="summary_timeline_dialog_empty_text">No Tasks</string>
 
     <!-- Summary / Expired -->
     <string name="summary_expired_overview_title">Overdue</string>
@@ -101,6 +106,11 @@
     <!-- Calendar -->
     <string name="calendar_dialog_title">%s</string>
     <string name="calendar_dialog_item_text">%1$s %2$s - %3$s (%4$s)</string>
+    <string name="calendar_previous_year">Previous year</string>
+    <string name="calendar_next_year">Next year</string>
+    <string name="calendar_previous_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="calendar_agenda_empty_text">No Tasks</string>
 
     <!--  Task List -->
     <string name="task_list_empty_text">No Tasks</string>
@@ -127,9 +137,9 @@
     <string name="task_details_field_error_name">Name cannot be empty</string>
     <string name="task_details_field_error_goal">Category cannot be empty</string>
     <string name="task_details_field_error_context_switch_duration">Duration cannot be empty or 0</string>
-    <string name="task_details_field_error_context_switch_duration_padding"> </string>
     <string name="task_details_field_error_schedule_repeating_duration">Duration cannot be empty or 0</string>
-    <string name="task_details_field_error_schedule_repeating_duration_padding">\n</string>
+    <string name="task_details_field_error_duration_too_long">Duration cannot be longer than 100 years</string>
+    <string name="task_details_field_error_schedule_repeating_days">The selected days are never reached with this interval</string>
 
     <string name="task_details_field_help_title_context_switch">Context Switch</string>
     <string name="task_details_field_help_content_context_switch">
@@ -137,6 +147,8 @@
     </string>
 
     <string name="task_details_color_reset">Reset</string>
+
+    <string name="time_picker_title">Select time</string>
 
     <!-- Task Preview -->
     <string name="task_preview_button_text_dismiss">Dismiss</string>
@@ -179,6 +191,7 @@
     <string name="settings_category_summary">Summary</string>
     <string name="settings_category_date_time">Date/Time</string>
     <string name="settings_category_other">Other</string>
+    <string name="settings_category_dismissed">Dismissed tasks</string>
     <string name="settings_category_debug">Debug</string>
     <string name="settings_summary_size_title">Size</string>
     <plurals name="settings_summary_size_hint">
@@ -191,6 +204,16 @@
     <plurals name="settings_postpone_length_hint">
         <item quantity="one">Postpone a task by %1$s minute</item>
         <item quantity="other">Postpone a task by %1$s minutes</item>
+    </plurals>
+    <string name="settings_dismissed_retention_title">Retention</string>
+    <plurals name="settings_dismissed_retention_hint">
+        <item quantity="one">Keep dismissed instances from the last day</item>
+        <item quantity="other">Keep dismissed instances from the last %1$s days</item>
+    </plurals>
+    <string name="settings_dismissed_limit_title">Limit</string>
+    <plurals name="settings_dismissed_limit_hint">
+        <item quantity="one">Keep at most %1$s dismissed instance per task</item>
+        <item quantity="other">Keep at most %1$s dismissed instances per task</item>
     </plurals>
     <string name="settings_date_time_format_title">Format</string>
     <string name="settings_date_time_format_hint">Show dates as %1$s and time as %2$s</string>

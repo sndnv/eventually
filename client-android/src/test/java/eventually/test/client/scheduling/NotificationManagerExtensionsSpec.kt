@@ -5,25 +5,35 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
-import androidx.preference.PreferenceManager
+import android.content.Intent
+import android.service.notification.StatusBarNotification
 import androidx.test.core.app.ApplicationProvider
+import eventually.client.activities.MainActivity
 import eventually.client.activities.receivers.PostponeReceiver
+import eventually.client.persistence.notifications.NotificationEntity
+import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.scheduling.NotificationManagerExtensions
 import eventually.client.scheduling.NotificationManagerExtensions.createInstanceNotificationChannels
 import eventually.client.scheduling.NotificationManagerExtensions.deleteInstanceNotifications
+import eventually.client.scheduling.NotificationManagerExtensions.pruneInstanceNotifications
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceContextSwitchNotification
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceExecutionNotification
 import eventually.client.serialization.Extras.requireDuration
+import eventually.client.serialization.Extras.requireTaskId
 import eventually.client.settings.Settings
+import eventually.client.settings.Settings.defaultPreferences
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.containsString
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
@@ -119,7 +129,7 @@ class NotificationManagerExtensionsSpec {
     @Test
     fun updateInstanceActionExtrasWhenRecreated() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val preferences = context.defaultPreferences()
 
         preferences.edit().putString(Settings.Keys.PostponeLength, "10").commit()
         val original = NotificationManagerExtensions.Intents.createPostponeIntent(context, task, instance)
@@ -147,6 +157,54 @@ class NotificationManagerExtensionsSpec {
         verify(exactly = 1) { manager.cancel(task + instance.hashCode()) }
 
         confirmVerified(manager)
+    }
+
+    @Test
+    fun pruneStoredNotificationsThatAreNoLongerShown() {
+        val shown = notification(id = 1)
+        val shownWithLegacyId = notification(id = 2)
+        val cleared = notification(id = 3)
+
+        val manager = mockk<NotificationManager>()
+        every { manager.activeNotifications } returns arrayOf(
+            statusBarNotification(id = Objects.hash(shown.task, shown.instance) and Int.MAX_VALUE),
+            statusBarNotification(id = shownWithLegacyId.task + shownWithLegacyId.instance.hashCode())
+        )
+
+        val repo = mockk<NotificationRepository>()
+        coEvery { repo.all() } returns listOf(shown, shownWithLegacyId, cleared)
+        coEvery { repo.delete(any()) } returns Unit
+
+        runBlocking { manager.pruneInstanceNotifications(repo) }
+
+        coVerify(exactly = 1) { repo.all() }
+        coVerify(exactly = 1) { repo.delete(cleared.id) }
+        confirmVerified(repo)
+    }
+
+    @Test
+    fun openTaskDetailsFromInstanceNotifications() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val pending = shadowOf(NotificationManagerExtensions.Intents.createTaskDetailsIntent(context, task, instance))
+
+        assertThat(pending.isActivityIntent, equalTo(true))
+        assertThat(pending.savedIntent.component?.className, equalTo(MainActivity::class.java.name))
+        assertThat(pending.savedIntent.requireTaskId(MainActivity.ExtraTask), equalTo(task.id))
+        assertThat(pending.savedIntent.flags and ExpectedActivityFlags, equalTo(ExpectedActivityFlags))
+    }
+
+    @Test
+    fun openMainScreenFromForegroundServiceNotifications() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val (_, notification) = NotificationManagerExtensions.createForegroundServiceNotification(context)
+        val pending = shadowOf(notification.contentIntent)
+
+        assertThat(pending.isActivityIntent, equalTo(true))
+        assertThat(pending.savedIntent.component?.className, equalTo(MainActivity::class.java.name))
+        assertThat(pending.savedIntent.hasExtra(MainActivity.ExtraTask), equalTo(false))
+        assertThat(pending.savedIntent.flags and ExpectedActivityFlags, equalTo(ExpectedActivityFlags))
     }
 
     @Test
@@ -179,4 +237,15 @@ class NotificationManagerExtensionsSpec {
     private val instance = TaskInstance(
         instant = Instant.now()
     )
+
+    private fun notification(id: Int): NotificationEntity =
+        NotificationEntity(id = id, task = id, instance = UUID.randomUUID(), type = "context", hash = id)
+
+    private fun statusBarNotification(id: Int): StatusBarNotification =
+        mockk<StatusBarNotification>().also { every { it.id } returns id }
+
+    companion object {
+        private const val ExpectedActivityFlags: Int =
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+    }
 }

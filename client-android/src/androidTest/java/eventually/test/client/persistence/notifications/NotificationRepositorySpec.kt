@@ -38,6 +38,16 @@ class NotificationRepositorySpec {
     }
 
     @Test
+    fun retrieveAllNotificationEntities() {
+        val repo = createRepo()
+
+        assertThat(runBlocking { repo.all() }, equalTo(emptyList()))
+
+        runBlocking { repo.put(task, instance, entity.type) }
+        assertThat(runBlocking { repo.all() }, equalTo(listOf(entity)))
+    }
+
+    @Test
     fun createNotificationEntitiesFromExistingEntity() {
         val repo = createRepo()
 
@@ -135,6 +145,8 @@ class NotificationRepositorySpec {
             val data = MutableLiveData<List<NotificationEntity>>(emptyList())
 
             override fun get(): LiveData<List<NotificationEntity>> = data
+
+            override suspend fun getAll(): List<NotificationEntity> = entities.values.toList()
 
             override suspend fun get(task: Int, instance: UUID, type: String): NotificationEntity? {
                 return entities.values.find { it.task == task && it.instance == instance && it.type == type }
