@@ -1,0 +1,55 @@
+name: Eventually Release
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      next_version:
+        description: 'Next release version'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      verbose:
+        description: 'Enable debug logging during release'
+        required: false
+        type: boolean
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ssh-key: ${{ secrets.RELEASE_KEY }}
+          ref: master
+
+      - name: Setup Python 3
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+
+      - name: Release project
+        run: |
+          pip install semver==3.1.1
+          git config --global user.name ${{ github.actor }}
+          git config --global user.email ${{ github.actor }}@users.noreply.github.com
+          ./release.py $VERBOSE --next $NEXT_VERSION
+          git push
+          git push --tags
+
+        env:
+          NEXT_VERSION: ${{ inputs.next_version }}
+          VERBOSE: ${{ inputs.verbose && '--verbose' || '' }}
