@@ -17,7 +17,8 @@ data class Task(
     val schedule: Schedule,
     val contextSwitch: Duration,
     val isActive: Boolean,
-    val color: Int?
+    val color: Int?,
+    val executionAlarm: Boolean = false
 ) {
     companion object {
         val MaxDuration: Duration = ChronoUnit.YEARS.duration.multipliedBy(100)

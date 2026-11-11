@@ -1,12 +1,16 @@
 package eventually.test.client.scheduling
 
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Message
+import android.service.notification.StatusBarNotification
 import androidx.test.core.app.ApplicationProvider
 import eventually.client.persistence.schedules.TaskScheduleEntity
 import eventually.client.persistence.schedules.TaskScheduleRepository
 import eventually.client.persistence.tasks.TaskRepository
+import eventually.client.scheduling.NotificationManagerExtensions
 import eventually.client.scheduling.NotificationQueue
 import eventually.client.scheduling.SchedulerService
 import eventually.client.scheduling.SchedulerService.Companion.applyTo
@@ -27,7 +31,11 @@ import eventually.core.scheduling.SchedulerOps
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
+import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.equalTo
 import org.hamcrest.MatcherAssert.assertThat
@@ -39,6 +47,7 @@ import org.robolectric.annotation.Config
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(RobolectricTestRunner::class)
@@ -51,7 +60,7 @@ class SchedulerServiceSpec {
         assertThat(
             context.createIntent(SchedulerService.ActionPut) {
                 it.putTask(SchedulerService.ActionPutExtraTask, task)
-            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout),
             equalTo(
                 SchedulerOps.Message.Put(task)
             )
@@ -60,7 +69,7 @@ class SchedulerServiceSpec {
         assertThat(
             context.createIntent(SchedulerService.ActionDelete) {
                 it.putTaskId(SchedulerService.ActionDeleteExtraTask, task.id)
-            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout),
             equalTo(
                 SchedulerOps.Message.Delete(task.id)
             )
@@ -70,7 +79,7 @@ class SchedulerServiceSpec {
             context.createIntent(SchedulerService.ActionDismiss) {
                 it.putTaskId(SchedulerService.ActionDismissExtraTask, task.id)
                 it.putInstanceId(SchedulerService.ActionDismissExtraInstance, instance.id)
-            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout),
             equalTo(
                 SchedulerOps.Message.Dismiss(task.id, instance.id)
             )
@@ -80,7 +89,7 @@ class SchedulerServiceSpec {
             context.createIntent(SchedulerService.ActionUndoDismiss) {
                 it.putTaskId(SchedulerService.ActionUndoDismissExtraTask, task.id)
                 it.putInstant(SchedulerService.ActionUndoDismissExtraInstant, instance.instant)
-            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout),
             equalTo(
                 SchedulerOps.Message.UndoDismiss(task.id, instance.instant)
             )
@@ -91,14 +100,14 @@ class SchedulerServiceSpec {
                 it.putTaskId(SchedulerService.ActionPostponeExtraTask, task.id)
                 it.putInstanceId(SchedulerService.ActionPostponeExtraInstance, instance.id)
                 it.putDuration(SchedulerService.ActionPostponeExtraBy, postponeBy)
-            }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout),
             equalTo(
                 SchedulerOps.Message.Postpone(task.id, instance.id, postponeBy)
             )
         )
 
         assertThat(
-            context.createIntent(SchedulerService.ActionEvaluate) { it }.toSchedulerMessage(::requireConfig, ::reload, ::prune),
+            context.createIntent(SchedulerService.ActionEvaluate) { it }.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout),
             equalTo(
                 SchedulerOps.Message.Evaluate(config)
             )
@@ -107,7 +116,12 @@ class SchedulerServiceSpec {
         val reloaded = AtomicBoolean(false)
         assertThat(
             context.createIntent(SchedulerService.ActionReload) { it }
-                .toSchedulerMessage(::requireConfig, reloadData = { reloaded.set(true) }, pruneNotifications = ::prune),
+                .toSchedulerMessage(
+                    ::requireConfig,
+                    reloadData = { reloaded.set(true) },
+                    pruneNotifications = ::prune,
+                    timeoutAlarm = ::timeout
+                ),
             equalTo(null)
         )
         assertThat(reloaded.get(), equalTo(true))
@@ -115,18 +129,28 @@ class SchedulerServiceSpec {
         val pruned = AtomicBoolean(false)
         assertThat(
             context.createIntent(SchedulerService.ActionPruneNotifications) { it }
-                .toSchedulerMessage(::requireConfig, ::reload, pruneNotifications = { pruned.set(true) }),
+                .toSchedulerMessage(::requireConfig, ::reload, pruneNotifications = { pruned.set(true) }, timeoutAlarm = ::timeout),
             equalTo(null)
         )
         assertThat(pruned.get(), equalTo(true))
 
+        val timedOut = mutableListOf<Pair<Int, UUID>>()
         assertThat(
-            null.toSchedulerMessage(::requireConfig, ::reload, ::prune),
+            context.createIntent(SchedulerService.ActionAlarmTimeout) {
+                it.putTaskId(SchedulerService.ActionAlarmTimeoutExtraTask, task.id)
+                it.putInstanceId(SchedulerService.ActionAlarmTimeoutExtraInstance, instance.id)
+            }.toSchedulerMessage(::requireConfig, ::reload, ::prune, timeoutAlarm = { t, i -> timedOut.add(t to i) }),
+            equalTo(null)
+        )
+        assertThat(timedOut.toList(), equalTo(listOf(task.id to instance.id)))
+
+        assertThat(
+            null.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout),
             equalTo(null)
         )
 
         try {
-            context.createIntent("other") { it }.toSchedulerMessage(::requireConfig, ::reload, ::prune)
+            context.createIntent("other") { it }.toSchedulerMessage(::requireConfig, ::reload, ::prune, ::timeout)
             fail("Excepted failure but none encountered")
         } catch (e: IllegalArgumentException) {
             assertThat(e.message, equalTo("Unexpected action encountered: [other]"))
@@ -234,6 +258,12 @@ class SchedulerServiceSpec {
 
             assertThat(
                 Message().apply { obj = SchedulerService.PruneNotifications }.handle(emptyMap(), repo, scheduleRepo),
+                equalTo(null)
+            )
+
+            assertThat(
+                Message().apply { obj = SchedulerService.AlarmTimeout(task.id, instance.id) }
+                    .handle(mapOf(Pair(task.id, TaskSchedule(task, mapOf(Pair(instance.id, instance)), emptyList()))), repo, scheduleRepo),
                 equalTo(null)
             )
 
@@ -379,6 +409,93 @@ class SchedulerServiceSpec {
         }
     }
 
+    @Test
+    fun resolveTimedOutAlarms() {
+        val other = TaskInstance(instant = instance.instant.plusSeconds(60))
+        val schedules = mapOf(task.id to TaskSchedule(task, mapOf(instance.id to instance, other.id to other), emptyList()))
+
+        assertThat(SchedulerService.AlarmTimeout(task.id, instance.id).resolve(schedules), equalTo(task to instance))
+        assertThat(SchedulerService.AlarmTimeout(task.id, other.id).resolve(schedules), equalTo(task to other))
+        assertThat(SchedulerService.AlarmTimeout(task.id, UUID.randomUUID()).resolve(schedules), equalTo(null))
+        assertThat(SchedulerService.AlarmTimeout(task.id + 1, instance.id).resolve(schedules), equalTo(null))
+    }
+
+    @Test
+    fun replaceRingingAlarmsWithMissedAlarmsOnTimeout() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val id = NotificationManagerExtensions.getInstanceNotificationId(task.id, instance.id)
+        val schedules = mapOf(task.id to TaskSchedule(task, mapOf(instance.id to instance), emptyList()))
+
+        val notification = slot<Notification>()
+
+        val manager = mockk<NotificationManager>()
+        every { manager.activeNotifications } returns arrayOf(ringingAlarm(id))
+        justRun { manager.cancel(any()) }
+        justRun { manager.notify(any(), capture(notification)) }
+
+        SchedulerService.AlarmTimeout(task.id, instance.id).applyTo(context, schedules, manager)
+
+        verify(exactly = 1) { manager.activeNotifications }
+        verify(exactly = 1) { manager.cancel(id) }
+        verify(exactly = 1) { manager.notify(id, any()) }
+        confirmVerified(manager)
+
+        assertThat(
+            notification.captured.channelId,
+            equalTo(NotificationManagerExtensions.Config.Default.instanceMissedAlarmChannel.id)
+        )
+    }
+
+    @Test
+    fun stopRingingAlarmsOfMissingInstancesOnTimeout() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val id = NotificationManagerExtensions.getInstanceNotificationId(task.id, instance.id)
+
+        listOf(
+            emptyMap(),
+            mapOf(task.id to TaskSchedule(task, emptyMap(), emptyList()))
+        ).forEach { schedules ->
+            val manager = mockk<NotificationManager>()
+            every { manager.activeNotifications } returns arrayOf(ringingAlarm(id))
+            justRun { manager.cancel(any()) }
+
+            SchedulerService.AlarmTimeout(task.id, instance.id).applyTo(context, schedules, manager)
+
+            verify(exactly = 1) { manager.activeNotifications }
+            verify(exactly = 1) { manager.cancel(id) }
+            verify(exactly = 1) { manager.cancel(task.id + instance.id.hashCode()) }
+            confirmVerified(manager)
+        }
+    }
+
+    @Test
+    fun ignoreTimeoutsOfAlarmsThatAreNoLongerRinging() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        listOf(
+            emptyMap(),
+            mapOf(task.id to TaskSchedule(task, mapOf(instance.id to instance), emptyList()))
+        ).forEach { schedules ->
+            val manager = mockk<NotificationManager>()
+            every { manager.activeNotifications } returns emptyArray()
+
+            SchedulerService.AlarmTimeout(task.id, instance.id).applyTo(context, schedules, manager)
+
+            verify(exactly = 1) { manager.activeNotifications }
+            confirmVerified(manager)
+        }
+    }
+
+    private fun ringingAlarm(id: Int): StatusBarNotification {
+        val notification = mockk<Notification>()
+        every { notification.channelId } returns NotificationManagerExtensions.Config.Default.instanceExecutionAlarmChannel.id
+
+        return mockk<StatusBarNotification>().also {
+            every { it.id } returns id
+            every { it.notification } returns notification
+        }
+    }
+
     private fun Context.createIntent(withAction: String, apply: (Intent) -> Intent): Intent =
         Intent(this, SchedulerService::class.java).apply {
             action = withAction
@@ -390,6 +507,9 @@ class SchedulerServiceSpec {
     private fun reload() = Unit
 
     private fun prune() = Unit
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun timeout(task: Int, instance: UUID) = Unit
 
     private val config = TaskSummaryConfig(summarySize = Duration.ofMinutes(15))
 

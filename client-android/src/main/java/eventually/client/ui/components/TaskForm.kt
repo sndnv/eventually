@@ -1,5 +1,6 @@
 package eventually.client.ui.components
 
+import android.app.NotificationManager
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,16 +44,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import eventually.client.R
+import eventually.client.scheduling.NotificationManagerExtensions
+import eventually.client.scheduling.NotificationManagerExtensions.canUseFullScreenAlarms
 import eventually.client.settings.Settings
 import eventually.client.ui.LayoutExtensions.isWide
 import java.time.DayOfWeek
@@ -65,7 +71,8 @@ fun TaskForm(
     firstDayOfWeek: DayOfWeek,
     @StringRes operation: Int,
     onOperation: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fullScreenAlarms: FullScreenAlarms = rememberFullScreenAlarms()
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val wide = isWide
@@ -97,6 +104,8 @@ fun TaskForm(
                         Section(title = R.string.task_details_field_title_context_switch) {
                             ContextSwitchInput(state = state)
                         }
+
+                        ExecutionAlarmInput(state = state, fullScreenAlarms = fullScreenAlarms)
                     }
                 }
             }
@@ -382,6 +391,63 @@ private fun ContextSwitchInput(state: TaskFormState) {
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun ExecutionAlarmInput(state: TaskFormState, fullScreenAlarms: FullScreenAlarms) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = state.executionAlarm, role = Role.Switch, onValueChange = { state.executionAlarm = it })
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = stringResource(R.string.task_details_field_title_execution_alarm), modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.width(8.dp))
+        Switch(checked = state.executionAlarm, onCheckedChange = null)
+    }
+
+    if (state.executionAlarm && !fullScreenAlarms.allowed) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val allowDescription = stringResource(R.string.task_details_field_full_screen_alarms_allow_description)
+
+            Text(
+                text = stringResource(R.string.task_details_field_full_screen_alarms_denied),
+                modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+            TextButton(
+                onClick = fullScreenAlarms.allow,
+                modifier = Modifier.semantics { contentDescription = allowDescription }
+            ) {
+                Text(text = stringResource(R.string.task_details_field_full_screen_alarms_allow))
+            }
+        }
+    }
+}
+
+class FullScreenAlarms(val allowed: Boolean, val allow: () -> Unit)
+
+@Composable
+fun rememberFullScreenAlarms(): FullScreenAlarms {
+    val context = LocalContext.current
+    val manager = remember(context) { context.getSystemService(NotificationManager::class.java) }
+    var allowed by remember(manager) { mutableStateOf(manager.canUseFullScreenAlarms()) }
+
+    LifecycleResumeEffect(manager) {
+        allowed = manager.canUseFullScreenAlarms()
+        onPauseOrDispose {}
+    }
+
+    return FullScreenAlarms(allowed = allowed) {
+        NotificationManagerExtensions.Intents.createFullScreenAlarmSettingsIntent(context)?.let { intent ->
+            runCatching { context.startActivity(intent) }
+        }
     }
 }
 

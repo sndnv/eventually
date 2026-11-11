@@ -47,6 +47,7 @@ class SettingsScreenSpec {
         showsText("Show at most 7 tasks")
         showsText("Sunday")
         showsText("Postpone a task by 10 minutes")
+        showsText("Stop ringing alarms after 10 minutes")
         showsText("Dismissed tasks")
         showsText("Keep dismissed instances from the last 30 days")
         showsText("Keep at most 100 dismissed instances per task")
@@ -133,6 +134,45 @@ class SettingsScreenSpec {
         composeRule.onNodeWithText("Cancel").performClick()
 
         showsText("Postpone a task by 10 minutes")
+
+        assertThat(preferences.all, equalTo(emptyMap()))
+    }
+
+    @Test
+    fun updateAlarmTimeout() {
+        showSettings()
+
+        updateNumber("Alarm timeout", "1")
+        showsText("Stop ringing alarms after 1 minute")
+
+        assertThat(preferences.all, equalTo(mapOf(Settings.Keys.AlarmTimeout to "1")))
+    }
+
+    @Test
+    fun showStoredAlarmTimeout() {
+        preferences.edit { putString(Settings.Keys.AlarmTimeout, "15") }
+
+        showSettings()
+
+        showsText("Stop ringing alarms after 15 minutes")
+    }
+
+    @Test
+    fun rejectInvalidAlarmTimeout() {
+        showSettings()
+
+        scrollTo("Alarm timeout")
+        composeRule.onNodeWithText("Alarm timeout").performClick()
+
+        listOf("0", "-5", "abc", "").forEach { invalid ->
+            composeRule.onNode(hasSetTextAction()).performTextReplacement(invalid)
+            composeRule.onNodeWithText("OK").performClick()
+            composeRule.onNode(hasSetTextAction()).assertExists()
+        }
+
+        composeRule.onNodeWithText("Cancel").performClick()
+
+        showsText("Stop ringing alarms after 10 minutes")
 
         assertThat(preferences.all, equalTo(emptyMap()))
     }

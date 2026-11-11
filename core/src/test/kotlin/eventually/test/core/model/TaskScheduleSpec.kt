@@ -248,6 +248,164 @@ class TaskScheduleSpec : WordSpec({
             newInstance.instant shouldBe (instance.instant)
         }
 
+        "not recreate once instances after dismissing them when they were postponed while overdue" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minusSeconds(30)))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val instance = schedule.instances.values.single()
+
+            val postponed = schedule.postpone(instance.id, by = Duration.ofMinutes(10))
+            val postponedInstance = postponed.instances.values.single()
+            postponedInstance.instant.isAfter(instance.instant) shouldBe (true)
+
+            val dismissed = postponed.dismiss(postponedInstance.id)
+            dismissed.dismissed shouldBe (listOf(postponedInstance.instant))
+
+            val updated = dismissed.update(after = Instant.now(), within = within)
+            updated.instances shouldBe (emptyMap())
+            updated.dismissed shouldBe (listOf(postponedInstance.instant))
+        }
+
+        "restore once instances that were postponed while overdue and then dismissed" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minusSeconds(30)))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val postponed = schedule.postpone(schedule.instances.keys.single(), by = Duration.ofMinutes(10))
+            val postponedInstance = postponed.instances.values.single()
+            val dismissed = postponed.dismiss(postponedInstance.id)
+
+            val restored = dismissed
+                .undoDismiss(postponedInstance.instant)
+                .update(after = Instant.now(), within = within)
+            restored.instances.values.map { it.instant } shouldBe (listOf(postponedInstance.instant))
+            restored.dismissed shouldBe (emptyList())
+        }
+
+        "create once instances when rescheduled after an earlier dismissal" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minusSeconds(30)))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val dismissed = schedule.dismiss(schedule.instances.keys.single())
+
+            val rescheduled = once.copy(schedule = Task.Schedule.Once(instant = now.plus(Duration.ofHours(1))))
+            val updated = dismissed.withTask(rescheduled).update(after = Instant.now(), within = within)
+
+            updated.instances.values.map { it.instant } shouldBe (listOf(now.plus(Duration.ofHours(1))))
+            updated.dismissed shouldBe (emptyList())
+        }
+
+        "create once instances when rescheduled before an earlier dismissal" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minusSeconds(30)))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val dismissed = schedule.dismiss(schedule.instances.keys.single())
+
+            val rescheduled = once.copy(schedule = Task.Schedule.Once(instant = now.minusSeconds(60)))
+            val updated = dismissed.withTask(rescheduled).update(after = Instant.now(), within = within)
+
+            updated.instances.values.map { it.instant } shouldBe (listOf(now.minusSeconds(60)))
+            updated.dismissed shouldBe (emptyList())
+        }
+
+        "create once instances when a repeating task with upcoming dismissals becomes a once task" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val repeating = task.copy(
+                schedule = Task.Schedule.Repeating(
+                    start = now.plus(Duration.ofHours(2)),
+                    every = Duration.ofDays(1).toInterval()
+                )
+            )
+
+            val schedule = TaskSchedule(repeating).update(after = now, within = within)
+            val dismissed = schedule.dismiss(schedule.instances.keys.single())
+            dismissed.dismissed shouldBe (listOf(now.plus(Duration.ofHours(2))))
+
+            val once = repeating.copy(schedule = Task.Schedule.Once(instant = now.plus(Duration.ofHours(1))))
+            val updated = dismissed.withTask(once).update(after = Instant.now(), within = within)
+
+            updated.instances.values.map { it.instant } shouldBe (listOf(now.plus(Duration.ofHours(1))))
+            updated.dismissed shouldBe (emptyList())
+        }
+
+        "keep instances when only the details of a once task are updated" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minus(Duration.ofMinutes(30))))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val postponed = schedule.postpone(schedule.instances.keys.single(), by = Duration.ofMinutes(10))
+
+            val updated = postponed.withTask(once.copy(name = "other-name", executionAlarm = true))
+
+            updated.instances shouldBe (postponed.instances)
+            updated.dismissed shouldBe (postponed.dismissed)
+        }
+
+        "replace all instances when a once task is rescheduled" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minus(Duration.ofMinutes(30))))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val past = schedule.instances.values.single()
+            past.execution().isBefore(now) shouldBe (true)
+
+            val rescheduled = once.copy(schedule = Task.Schedule.Once(instant = now.plus(Duration.ofHours(1))))
+            val withTask = schedule.withTask(rescheduled)
+            withTask.instances shouldBe (emptyMap())
+
+            val updated = withTask.update(after = Instant.now(), within = within)
+            updated.instances.values.map { it.instant } shouldBe (listOf(now.plus(Duration.ofHours(1))))
+            updated.instances.values.map { it.postponed } shouldBe (listOf(null))
+        }
+
+        "replace postponed instances when a once task is rescheduled" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minusSeconds(30)))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val postponed = schedule.postpone(schedule.instances.keys.single(), by = Duration.ofMinutes(10))
+
+            val rescheduled = once.copy(schedule = Task.Schedule.Once(instant = now.plus(Duration.ofHours(1))))
+            postponed.withTask(rescheduled).instances shouldBe (emptyMap())
+        }
+
+        "keep past instances when a once task is disabled" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minus(Duration.ofMinutes(30))))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+
+            schedule.withTask(once.copy(isActive = false)).instances shouldBe (schedule.instances)
+        }
+
+        "keep past instances when a once task becomes repeating" {
+            val now = Instant.now()
+            val within = Duration.ofMinutes(5)
+            val once = task.copy(schedule = Task.Schedule.Once(instant = now.minus(Duration.ofMinutes(30))))
+
+            val schedule = TaskSchedule(once).update(after = now, within = within)
+            val repeating = once.copy(
+                schedule = Task.Schedule.Repeating(
+                    start = now.plus(Duration.ofHours(1)),
+                    every = Duration.ofDays(1).toInterval()
+                )
+            )
+
+            schedule.withTask(repeating).instances shouldBe (schedule.instances)
+        }
+
         "fail to undo dismissal of missing task instants (non-repeating schedules)" {
             val once = task.copy(schedule = Task.Schedule.Once(instant = after()))
             val schedule = TaskSchedule(once)
@@ -568,7 +726,8 @@ class TaskScheduleSpec : WordSpec({
                 name = "other-name",
                 description = "other-description",
                 goal = "other-goal",
-                contextSwitch = Duration.ofMinutes(42)
+                contextSwitch = Duration.ofMinutes(42),
+                executionAlarm = true
             )
 
             val scheduleWithUpdatedTask = updatedSchedule.withTask(updatedTask)

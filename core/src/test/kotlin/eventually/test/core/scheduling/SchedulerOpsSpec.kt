@@ -258,6 +258,23 @@ class SchedulerOpsSpec : WordSpec({
             result.affectedSchedules shouldBe (listOf(task.id))
         }
 
+        "replace past instances when rescheduling once tasks" {
+            val past = task.copy(schedule = Task.Schedule.Once(instant = Instant.now().minus(Duration.ofMinutes(30))))
+            val schedules = evaluate(mapOf(Pair(past.id, TaskSchedule(past))))
+            val instance = schedules.values.single().instances.values.single()
+
+            val next = Instant.now().plus(Duration.ofHours(1))
+            val rescheduled = past.copy(schedule = Task.Schedule.Once(instant = next))
+            val result = SchedulerOps.put(schedules, SchedulerOps.Message.Put(rescheduled))
+
+            result.schedules.values.single().instances shouldBe (emptyMap())
+            result.notifications shouldBe (
+                listOf(SchedulerOps.Notification.DeleteInstanceNotifications(past.id, instance.id))
+            )
+
+            evaluate(result.schedules).values.single().instances.values.map { it.instant } shouldBe (listOf(next))
+        }
+
         "support updating existing tasks when set to inactive" {
             val schedules = evaluate(mapOf(Pair(task.id, TaskSchedule(task))))
 
@@ -499,6 +516,23 @@ class SchedulerOpsSpec : WordSpec({
             ))
             result.summary shouldBe (null)
             result.affectedSchedules shouldBe (listOf(task.id))
+        }
+
+        "not recreate once instances that were postponed while overdue and then dismissed" {
+            val overdue = task.copy(schedule = Task.Schedule.Once(instant = Instant.now().minusSeconds(30)))
+            val schedules = evaluate(mapOf(Pair(overdue.id, TaskSchedule(overdue))))
+            val instance = schedules.values.single().instances.values.single()
+
+            val postpone = SchedulerOps.Message.Postpone(overdue.id, instance.id, Duration.ofMinutes(10))
+            val postponed = evaluate(SchedulerOps.postpone(schedules, postpone).schedules)
+            postponed.values.single().instances.keys shouldBe (setOf(instance.id))
+
+            val dismissed = evaluate(
+                SchedulerOps.dismiss(postponed, SchedulerOps.Message.Dismiss(overdue.id, instance.id)).schedules
+            )
+
+            dismissed.values.single().instances shouldBe (emptyMap())
+            evaluate(dismissed).values.single().instances shouldBe (emptyMap())
         }
 
         "do nothing when postponing missing tasks" {

@@ -23,7 +23,10 @@ import eventually.client.persistence.Converters.Companion.asSchedule
 import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.persistence.schedules.TaskScheduleRepository
 import eventually.client.persistence.tasks.TaskRepository
+import eventually.client.scheduling.NotificationManagerExtensions.deleteInstanceNotifications
+import eventually.client.scheduling.NotificationManagerExtensions.isInstanceExecutionAlarmActive
 import eventually.client.scheduling.NotificationManagerExtensions.pruneInstanceNotifications
+import eventually.client.scheduling.NotificationManagerExtensions.replaceInstanceExecutionAlarm
 import eventually.client.serialization.Extras.requireDuration
 import eventually.client.serialization.Extras.requireInstanceId
 import eventually.client.serialization.Extras.requireInstant
@@ -32,12 +35,15 @@ import eventually.client.serialization.Extras.requireTaskId
 import eventually.client.settings.Settings
 import eventually.client.settings.Settings.defaultPreferences
 import eventually.client.settings.Settings.getSummaryConfig
+import eventually.core.model.Task
+import eventually.core.model.TaskInstance
 import eventually.core.model.TaskSchedule
 import eventually.core.model.TaskSummary
 import eventually.core.model.TaskSummaryConfig
 import eventually.core.scheduling.SchedulerOps
 import kotlinx.coroutines.runBlocking
 import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -78,6 +84,8 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
 
             runBlocking {
                 if (msg.obj == PruneNotifications) notificationManager.pruneInstanceNotifications(notificationRepository)
+
+                (msg.obj as? AlarmTimeout)?.applyTo(this@SchedulerService, schedules, notificationManager)
 
                 msg
                     .handle(schedules, taskRepository, taskScheduleRepository)
@@ -122,7 +130,8 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
             val obj = intent.toSchedulerMessage(
                 requireConfig = ::requireConfig,
                 reloadData = ::load,
-                pruneNotifications = ::prune
+                pruneNotifications = ::prune,
+                timeoutAlarm = ::timeoutAlarm
             )
 
             obj?.let {
@@ -212,6 +221,13 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         }
     }
 
+    private fun timeoutAlarm(task: Int, instance: UUID) {
+        handler.obtainMessage().let { msg ->
+            msg.obj = AlarmTimeout(task, instance)
+            handler.sendMessage(msg)
+        }
+    }
+
     inner class SchedulerBinder : Binder() {
         val service: SchedulerService = this@SchedulerService
     }
@@ -219,6 +235,21 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
     data object Load
 
     data object PruneNotifications
+
+    data class AlarmTimeout(val task: Int, val instance: UUID) {
+        fun resolve(schedules: Map<Int, TaskSchedule>): Pair<Task, TaskInstance>? =
+            schedules[task]?.let { schedule -> schedule.instances[instance]?.let { schedule.task to it } }
+
+        fun applyTo(context: Context, schedules: Map<Int, TaskSchedule>, notificationManager: NotificationManager) {
+            when (val resolved = resolve(schedules)) {
+                null -> if (notificationManager.isInstanceExecutionAlarmActive(task, instance)) {
+                    notificationManager.deleteInstanceNotifications(task, instance)
+                }
+
+                else -> notificationManager.replaceInstanceExecutionAlarm(context, resolved.first, resolved.second)
+            }
+        }
+    }
 
     companion object {
         const val ActionPut: String = "eventually.client.scheduling.SchedulerService.Put"
@@ -248,10 +279,17 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
         const val ActionReload: String = "eventually.client.scheduling.SchedulerService.Reload"
         const val ActionPruneNotifications: String = "eventually.client.scheduling.SchedulerService.PruneNotifications"
 
+        const val ActionAlarmTimeout: String = "eventually.client.scheduling.SchedulerService.AlarmTimeout"
+        const val ActionAlarmTimeoutExtraTask: String =
+            "eventually.client.scheduling.SchedulerService.AlarmTimeout.extra_task"
+        const val ActionAlarmTimeoutExtraInstance: String =
+            "eventually.client.scheduling.SchedulerService.AlarmTimeout.extra_instance"
+
         fun Intent?.toSchedulerMessage(
             requireConfig: () -> TaskSummaryConfig,
             reloadData: () -> Unit,
-            pruneNotifications: () -> Unit
+            pruneNotifications: () -> Unit,
+            timeoutAlarm: (Int, UUID) -> Unit
         ): SchedulerOps.Message? =
             when (this?.action) {
                 ActionPut -> {
@@ -313,6 +351,15 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
                     null
                 }
 
+                ActionAlarmTimeout -> {
+                    requireConfig()
+
+                    val task = requireTaskId(ActionAlarmTimeoutExtraTask)
+                    val instance = requireInstanceId(ActionAlarmTimeoutExtraInstance)
+                    timeoutAlarm(task, instance)
+                    null
+                }
+
                 null -> null
 
                 else -> throw IllegalArgumentException("Unexpected action encountered: [$action]")
@@ -338,6 +385,7 @@ class SchedulerService : LifecycleService(), SharedPreferences.OnSharedPreferenc
             when (val message = obj) {
                 Load -> SchedulerOps.init(loadInit(taskRepository, taskScheduleRepository))
                 PruneNotifications -> null
+                is AlarmTimeout -> null
 
                 is SchedulerOps.Message.Put -> {
                     val taskId = taskRepository.put(message.task)

@@ -303,7 +303,8 @@ class ConvertersSpec {
                 ),
                 contextSwitch = Duration.ofMinutes(5),
                 isActive = true,
-                color = 1
+                color = 1,
+                executionAlarm = true
         )
 
         val converted = Converters.taskToString(original)
@@ -318,7 +319,8 @@ class ConvertersSpec {
                 "schedule":{"type":"repeating","start":${start.epochSecond},"every":{"unit":"seconds","amount":1200},"days":[4,6,3]},
                 "context_switch":300,
                 "is_active":true,
-                "color":1
+                "color":1,
+                "execution_alarm":true
             }""".replace("\n", "").replace(" ", "")
         )
         )
@@ -339,7 +341,8 @@ class ConvertersSpec {
                 ),
                 contextSwitch = Duration.ofMinutes(5),
                 isActive = true,
-                color = 1
+                color = 1,
+                executionAlarm = true
         )
 
         val entity = TaskEntity(
@@ -350,7 +353,8 @@ class ConvertersSpec {
                 schedule = task.schedule,
                 contextSwitch = task.contextSwitch,
                 isActive = task.isActive,
-                color = 1
+                color = 1,
+                executionAlarm = true
         )
 
         assertThat(Converters.taskToEntity(task), equalTo(entity))
@@ -447,7 +451,8 @@ class ConvertersSpec {
                 ),
                 contextSwitch = Duration.ofMinutes(5),
                 isActive = true,
-                color = 1
+                color = 1,
+                executionAlarm = true
         )
 
         val instant = Instant.now().truncatedTo(ChronoUnit.SECONDS)
@@ -486,6 +491,7 @@ class ConvertersSpec {
         val converted = Converters.dataExportToString(original)
 
         assertThat(converted, containsString(""""tasks":[{"id":42"""))
+        assertThat(converted, containsString(""""execution_alarm":true"""))
         assertThat(converted, containsString(""""schedules":[{"task":42"""))
         assertThat(converted, containsString(""""notifications":[{"id":0,"task":42"""))
 
@@ -582,6 +588,34 @@ class ConvertersSpec {
         )
 
         assertThat(Converters.stringToDataExport(export), equalTo(expected))
+    }
+
+    @Test
+    fun convertDataExportsWithoutExecutionAlarms() {
+        val task = """{"id":42,"name":"test-task","description":"","goal":"test-goal",""" +
+            """"schedule":{"type":"once","instant":42},"context_switch":300,"is_active":true,"color":1}"""
+
+        val export = """{"tasks":[$task],"schedules":[],"notifications":[]}"""
+
+        assertThat(
+            Converters.stringToDataExport(export).tasks,
+            equalTo(
+                listOf(
+                    Task(
+                        id = 42,
+                        name = "test-task",
+                        description = "",
+                        goal = "test-goal",
+                        schedule = Task.Schedule.Once(instant = Instant.ofEpochSecond(42)),
+                        contextSwitch = Duration.ofMinutes(5),
+                        isActive = true,
+                        color = 1,
+                        executionAlarm = false
+                    )
+                )
+            )
+        )
+        assertThat(Converters.stringToTask(task).executionAlarm, equalTo(false))
     }
 
     private fun exportWith(every: String = """{"unit":"days","amount":1}""", contextSwitch: Long = 300): String {
