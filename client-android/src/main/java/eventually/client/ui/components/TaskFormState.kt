@@ -36,6 +36,7 @@ class TaskFormState(
     contextSwitchUnit: ChronoUnit,
     isActive: Boolean,
     color: Int,
+    executionAlarm: Boolean,
     val expandable: Boolean,
     expanded: Boolean,
     errors: Set<TaskFormError>
@@ -55,6 +56,7 @@ class TaskFormState(
     var contextSwitchUnit: ChronoUnit by mutableStateOf(contextSwitchUnit)
     var isActive: Boolean by mutableStateOf(isActive)
     var color: Int by mutableIntStateOf(color)
+    var executionAlarm: Boolean by mutableStateOf(executionAlarm)
     var expanded: Boolean by mutableStateOf(expanded)
 
     var errors: Set<TaskFormError> by mutableStateOf(errors)
@@ -95,7 +97,8 @@ class TaskFormState(
         },
         contextSwitch = Duration.of(contextSwitchAmount.toLong(), contextSwitchUnit),
         isActive = isActive,
-        color = color.takeIf { it != 0 && it != defaultColor }
+        color = color.takeIf { it != 0 && it != defaultColor },
+        executionAlarm = executionAlarm
     )
 
     private fun repeatingSchedule(zone: ZoneId): Task.Schedule.Repeating = Task.Schedule.Repeating(
@@ -152,6 +155,7 @@ class TaskFormState(
                 contextSwitchUnit = contextSwitchUnit,
                 isActive = task?.isActive ?: true,
                 color = task?.color ?: defaultColor,
+                executionAlarm = task?.executionAlarm ?: false,
                 expandable = task == null,
                 expanded = task != null,
                 errors = emptySet()
@@ -176,6 +180,7 @@ class TaskFormState(
                     state.contextSwitchUnit,
                     state.isActive,
                     state.color,
+                    state.executionAlarm,
                     state.expandable,
                     state.expanded,
                     ArrayList(state.errors)
@@ -199,9 +204,10 @@ class TaskFormState(
                     contextSwitchUnit = saved[12] as ChronoUnit,
                     isActive = saved[13] as Boolean,
                     color = saved[14] as Int,
-                    expandable = saved[15] as Boolean,
-                    expanded = saved[16] as Boolean,
-                    errors = (saved[17] as List<TaskFormError>).toSet()
+                    executionAlarm = saved[15] as Boolean,
+                    expandable = saved[16] as Boolean,
+                    expanded = saved[17] as Boolean,
+                    errors = (saved[18] as List<TaskFormError>).toSet()
                 )
             }
         )

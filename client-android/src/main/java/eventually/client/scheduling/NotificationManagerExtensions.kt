@@ -7,8 +7,14 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.media.AudioAttributes
+import android.media.RingtoneManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings as AndroidSettings
 import androidx.core.app.NotificationCompat
 import eventually.client.R
+import eventually.client.activities.AlarmActivity
 import eventually.client.activities.MainActivity
 import eventually.client.activities.helpers.DateTimeExtensions.formatAsTime
 import eventually.client.activities.receivers.DismissReceiver
@@ -16,11 +22,14 @@ import eventually.client.activities.receivers.PostponeReceiver
 import eventually.client.persistence.notifications.NotificationRepository
 import eventually.client.serialization.Extras.putDuration
 import eventually.client.serialization.Extras.putInstanceId
+import eventually.client.serialization.Extras.putInstant
+import eventually.client.serialization.Extras.putTask
 import eventually.client.serialization.Extras.putTaskId
 import eventually.client.settings.Settings.defaultPreferences
 import eventually.client.settings.Settings.getPostponeLength
 import eventually.core.model.Task
 import eventually.core.model.TaskInstance
+import java.time.Duration
 import java.util.UUID
 
 object NotificationManagerExtensions {
@@ -42,6 +51,18 @@ object NotificationManagerExtensions {
                 name = context.getString(R.string.notification_channel_instance_context_switch_name)
             )
         )
+
+        createNotificationChannel(
+            config.instanceExecutionAlarmChannel.toNotificationChannel(
+                name = context.getString(R.string.notification_channel_instance_execution_alarm_name)
+            )
+        )
+
+        createNotificationChannel(
+            config.instanceMissedAlarmChannel.toNotificationChannel(
+                name = context.getString(R.string.notification_channel_instance_missed_alarm_name)
+            )
+        )
     }
 
     fun NotificationManager.putInstanceExecutionNotification(
@@ -53,11 +74,7 @@ object NotificationManagerExtensions {
         val executionTime = instance.execution().formatAsTime(context)
 
         val title = context.getString(R.string.notification_instance_execution_title, executionTime, task.name)
-        val text = if (task.description.isEmpty()) {
-            context.getString(R.string.notification_instance_execution_no_description_text, task.goal)
-        } else {
-            context.getString(R.string.notification_instance_execution_text, task.goal, task.description)
-        }
+        val text = executionText(context, task)
 
         val intent = Intents.createTaskDetailsIntent(context, task, instance)
         val (dismissAction, postponeAction) = Actions.createInstanceActions(context, task, instance)
@@ -74,6 +91,92 @@ object NotificationManagerExtensions {
 
         notify(getInstanceNotificationId(task, instance), notification)
     }
+
+    fun NotificationManager.putInstanceExecutionAlarm(
+        context: Context,
+        task: Task,
+        instance: TaskInstance,
+        timeout: Duration,
+        config: Config = Config.Default
+    ) {
+        val executionTime = instance.execution().formatAsTime(context)
+
+        val title = context.getString(R.string.notification_instance_execution_title, executionTime, task.name)
+        val text = executionText(context, task)
+
+        val intent = Intents.createAlarmIntent(context, task, instance)
+        val (dismissAction, postponeAction) = Actions.createInstanceActions(context, task, instance)
+
+        val notification = NotificationCompat.Builder(context, config.instanceExecutionAlarmChannel.id)
+            .setSmallIcon(R.drawable.ic_alarm)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setOngoing(true)
+            .setContentIntent(intent)
+            .setFullScreenIntent(intent, true)
+            .setTimeoutAfter(timeout.plus(AlarmTimeoutGrace).toMillis())
+            .addAction(dismissAction)
+            .addAction(postponeAction)
+            .build()
+
+        notification.flags = notification.flags or Notification.FLAG_INSISTENT
+
+        notify(getInstanceNotificationId(task, instance), notification)
+    }
+
+    fun NotificationManager.putInstanceMissedAlarmNotification(
+        context: Context,
+        task: Task,
+        instance: TaskInstance,
+        config: Config = Config.Default
+    ) {
+        val executionTime = instance.execution().formatAsTime(context)
+
+        val title = context.getString(R.string.notification_instance_missed_alarm_title, executionTime, task.name)
+        val text = executionText(context, task)
+
+        val intent = Intents.createTaskDetailsIntent(context, task, instance)
+        val (dismissAction, postponeAction) = Actions.createInstanceActions(context, task, instance)
+
+        val notification = NotificationCompat.Builder(context, config.instanceMissedAlarmChannel.id)
+            .setSmallIcon(R.drawable.ic_alarm)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setContentIntent(intent)
+            .setAutoCancel(true)
+            .addAction(dismissAction)
+            .addAction(postponeAction)
+            .build()
+
+        notify(getInstanceNotificationId(task, instance), notification)
+    }
+
+    fun NotificationManager.replaceInstanceExecutionAlarm(
+        context: Context,
+        task: Task,
+        instance: TaskInstance,
+        config: Config = Config.Default
+    ) {
+        if (isInstanceExecutionAlarmActive(task.id, instance.id, config)) {
+            cancel(getInstanceNotificationId(task, instance))
+            putInstanceMissedAlarmNotification(context, task, instance, config)
+        }
+    }
+
+    fun NotificationManager.isInstanceExecutionAlarmActive(
+        task: Int,
+        instance: UUID,
+        config: Config = Config.Default
+    ): Boolean {
+        val id = getInstanceNotificationId(task, instance)
+
+        return activeNotifications.any { it.id == id && it.notification.channelId == config.instanceExecutionAlarmChannel.id }
+    }
+
+    fun NotificationManager.canUseFullScreenAlarms(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || canUseFullScreenIntent()
 
     fun NotificationManager.putInstanceContextSwitchNotification(
         context: Context,
@@ -142,11 +245,18 @@ object NotificationManagerExtensions {
         return notificationId to notification
     }
 
+    private fun executionText(context: Context, task: Task): String =
+        if (task.description.isEmpty()) {
+            context.getString(R.string.notification_instance_execution_no_description_text, task.goal)
+        } else {
+            context.getString(R.string.notification_instance_execution_text, task.goal, task.description)
+        }
+
     private fun getInstanceNotificationId(task: Task, instance: TaskInstance): Int {
         return getInstanceNotificationId(task.id, instance.id)
     }
 
-    private fun getInstanceNotificationId(task: Int, instance: UUID): Int {
+    fun getInstanceNotificationId(task: Int, instance: UUID): Int {
         return java.util.Objects.hash(task, instance) and Int.MAX_VALUE
     }
 
@@ -193,11 +303,35 @@ object NotificationManagerExtensions {
             )
         }
 
+        fun createAlarmIntent(context: Context, task: Task, instance: TaskInstance): PendingIntent {
+            val intent = Intent(context, AlarmActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putTask(AlarmActivity.ExtraTask, task)
+                .putInstanceId(AlarmActivity.ExtraInstance, instance.id)
+                .putInstant(AlarmActivity.ExtraExecution, instance.execution())
+
+            return PendingIntent.getActivity(
+                context,
+                getInstanceNotificationId(task, instance) + AlarmActivityRequestCode,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+
+        fun createFullScreenAlarmSettingsIntent(context: Context): Intent? =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                Intent(AndroidSettings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+                    .setData(Uri.fromParts("package", context.packageName, null))
+            } else {
+                null
+            }
+
         fun createDismissIntent(context: Context, task: Task, instance: TaskInstance): PendingIntent {
             return PendingIntent.getBroadcast(
                 context,
                 getInstanceNotificationId(task, instance) + DismissInstanceRequestCode,
                 Intent(DismissReceiver.Action).apply {
+                    setPackage(context.packageName)
                     putTaskId(DismissReceiver.ExtraTask, task.id)
                     putInstanceId(DismissReceiver.ExtraInstance, instance.id)
                 },
@@ -211,6 +345,7 @@ object NotificationManagerExtensions {
                 getInstanceNotificationId(task, instance) + PostponeInstanceRequestCode,
                 Intent(PostponeReceiver.Action).apply {
                     val by = context.defaultPreferences().getPostponeLength()
+                    setPackage(context.packageName)
                     putTaskId(PostponeReceiver.ExtraTask, task.id)
                     putInstanceId(PostponeReceiver.ExtraInstance, instance.id)
                     putDuration(PostponeReceiver.ExtraBy, by)
@@ -222,18 +357,25 @@ object NotificationManagerExtensions {
         private const val DetailsActivityRequestCode: Int = 1
         private const val DismissInstanceRequestCode: Int = 2
         private const val PostponeInstanceRequestCode: Int = 3
+        private const val AlarmActivityRequestCode: Int = 4
     }
+
+    private val AlarmTimeoutGrace: Duration = Duration.ofMinutes(1)
 
     data class Config(
         val foregroundServiceChannel: Channel,
         val instanceExecutionChannel: Channel,
-        val instanceContextSwitchChannel: Channel
+        val instanceContextSwitchChannel: Channel,
+        val instanceExecutionAlarmChannel: Channel,
+        val instanceMissedAlarmChannel: Channel
     ) {
         companion object {
             val Default: Config = Config(
                 foregroundServiceChannel = Channel.ForegroundServiceChannel,
                 instanceExecutionChannel = Channel.InstanceExecutionChannel,
-                instanceContextSwitchChannel = Channel.InstanceContextSwitchChannel
+                instanceContextSwitchChannel = Channel.InstanceContextSwitchChannel,
+                instanceExecutionAlarmChannel = Channel.InstanceExecutionAlarmChannel,
+                instanceMissedAlarmChannel = Channel.InstanceMissedAlarmChannel
             )
         }
 
@@ -241,7 +383,8 @@ object NotificationManagerExtensions {
             val id: String,
             val importance: Int,
             val light: Int?,
-            val vibrationEnabled: Boolean
+            val vibrationEnabled: Boolean,
+            val alarm: Boolean = false
         ) {
             fun toNotificationChannel(name: String): NotificationChannel {
                 val channel = NotificationChannel(id, name, importance)
@@ -249,6 +392,16 @@ object NotificationManagerExtensions {
                 channel.enableLights(light != null)
                 channel.lightColor = light ?: Color.TRANSPARENT
                 channel.enableVibration(vibrationEnabled)
+
+                if (alarm) {
+                    channel.setSound(
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                }
 
                 return channel
             }
@@ -273,6 +426,21 @@ object NotificationManagerExtensions {
                     importance = NotificationManager.IMPORTANCE_HIGH,
                     light = Color.YELLOW,
                     vibrationEnabled = true
+                )
+
+                val InstanceExecutionAlarmChannel: Channel = Channel(
+                    id = "eventually.client.scheduling.notification_channel_instance_execution_alarm",
+                    importance = NotificationManager.IMPORTANCE_HIGH,
+                    light = Color.RED,
+                    vibrationEnabled = true,
+                    alarm = true
+                )
+
+                val InstanceMissedAlarmChannel: Channel = Channel(
+                    id = "eventually.client.scheduling.notification_channel_instance_missed_alarm",
+                    importance = NotificationManager.IMPORTANCE_DEFAULT,
+                    light = Color.RED,
+                    vibrationEnabled = false
                 )
             }
         }

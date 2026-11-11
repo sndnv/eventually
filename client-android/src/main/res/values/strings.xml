@@ -43,6 +43,8 @@
     <string name="notification_channel_foreground_service_name">Scheduler Service</string>
     <string name="notification_channel_instance_execution_name">Task Notifications</string>
     <string name="notification_channel_instance_context_switch_name">Task Context Switch Notifications</string>
+    <string name="notification_channel_instance_execution_alarm_name">Task Alarms</string>
+    <string name="notification_channel_instance_missed_alarm_name">Missed Task Alarms</string>
 
     <!-- Notifications -->
     <string name="notification_foreground_service_title">Background Scheduler Running</string>
@@ -52,8 +54,15 @@
     <string name="notification_instance_context_switch_title">[%1$s] - %2$s</string>
     <string name="notification_instance_context_switch_text">[%1$s] - %2$s</string>
     <string name="notification_instance_context_switch_no_description_text">[%s]</string>
+    <string name="notification_instance_missed_alarm_title">Missed alarm: [%1$s] - %2$s</string>
     <string name="notification_instance_action_dismiss_title">Dismiss</string>
     <string name="notification_instance_action_postpone_title">Postpone</string>
+
+    <!-- Alarms -->
+    <plurals name="alarm_action_postpone">
+        <item quantity="one">Postpone by %1$d minute</item>
+        <item quantity="other">Postpone by %1$d minutes</item>
+    </plurals>
 
     <!-- Toasts / Snackbars -->
     <string name="toast_task_created">Task created</string>
@@ -125,6 +134,10 @@
     <string name="task_details_field_title_context_switch">Context Switch (required)</string>
     <string name="task_details_field_title_color">Calendar Event Color</string>
     <string name="task_details_field_title_is_active">Enabled</string>
+    <string name="task_details_field_title_execution_alarm">Alarm when due</string>
+    <string name="task_details_field_full_screen_alarms_denied">Full-screen alarms are not allowed; alarms will only show as notifications</string>
+    <string name="task_details_field_full_screen_alarms_allow">Allow</string>
+    <string name="task_details_field_full_screen_alarms_allow_description">Allow full-screen alarms</string>
     <string name="task_details_field_title_schedule">Schedule</string>
     <string name="task_details_field_title_schedule_once">Once</string>
     <string name="task_details_field_title_schedule_once_date">On</string>
@@ -204,6 +217,11 @@
     <plurals name="settings_postpone_length_hint">
         <item quantity="one">Postpone a task by %1$s minute</item>
         <item quantity="other">Postpone a task by %1$s minutes</item>
+    </plurals>
+    <string name="settings_alarm_timeout_title">Alarm timeout</string>
+    <plurals name="settings_alarm_timeout_hint">
+        <item quantity="one">Stop ringing alarms after %1$s minute</item>
+        <item quantity="other">Stop ringing alarms after %1$s minutes</item>
     </plurals>
     <string name="settings_dismissed_retention_title">Retention</string>
     <plurals name="settings_dismissed_retention_hint">

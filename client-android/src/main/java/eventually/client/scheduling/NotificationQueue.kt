@@ -4,12 +4,18 @@ import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
 import eventually.client.persistence.notifications.NotificationRepository
+import eventually.client.scheduling.AlarmManagerExtensions.deleteAlarmTimeout
 import eventually.client.scheduling.AlarmManagerExtensions.deleteEvaluationAlarm
+import eventually.client.scheduling.AlarmManagerExtensions.putAlarmTimeout
 import eventually.client.scheduling.AlarmManagerExtensions.putEvaluationAlarm
 import eventually.client.scheduling.NotificationManagerExtensions.deleteInstanceNotifications
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceContextSwitchNotification
+import eventually.client.scheduling.NotificationManagerExtensions.putInstanceExecutionAlarm
 import eventually.client.scheduling.NotificationManagerExtensions.putInstanceExecutionNotification
+import eventually.client.settings.Settings.defaultPreferences
+import eventually.client.settings.Settings.getAlarmTimeout
 import eventually.core.scheduling.SchedulerOps
+import java.time.Instant
 import java.util.LinkedList
 import java.util.Queue
 import java.util.UUID
@@ -77,7 +83,13 @@ class NotificationQueue(
                 }
 
                 is SchedulerOps.Notification.PutInstanceExecutionNotification -> {
-                    notificationManager.putInstanceExecutionNotification(context, it.task, it.instance)
+                    if (it.task.executionAlarm) {
+                        val timeout = context.defaultPreferences().getAlarmTimeout()
+                        notificationManager.putInstanceExecutionAlarm(context, it.task, it.instance, timeout)
+                        alarmManager.putAlarmTimeout(context, it.task.id, it.instance.id, Instant.now().plus(timeout))
+                    } else {
+                        notificationManager.putInstanceExecutionNotification(context, it.task, it.instance)
+                    }
                     notificationRepository.put(it.task, it.instance, type = "execution")
                 }
 
@@ -88,6 +100,7 @@ class NotificationQueue(
 
                 is SchedulerOps.Notification.DeleteInstanceNotifications -> {
                     notificationManager.deleteInstanceNotifications(it.task, it.instance)
+                    alarmManager.deleteAlarmTimeout(context, it.task, it.instance)
                     notificationRepository.delete(it.task, it.instance)
                 }
             }

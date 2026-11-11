@@ -18,18 +18,24 @@ data class TaskSchedule(
         return if (task.isActive) {
             val latestInstance = instances.values.maxByOrNull { it.instant }
             var nextInstants = task.schedule.next(after, within)
+            val repeating = task.schedule is Task.Schedule.Repeating
 
             val collected: List<Instant>
             while (true) {
                 val last = nextInstants.lastOrNull()
 
                 val filtered = nextInstants.filter { next ->
-                    !dismissed.contains(next)
+                    val wasDismissed = if (repeating) {
+                        dismissed.contains(next)
+                    } else {
+                        dismissed.any { !it.isBefore(next) }
+                    }
+
+                    !wasDismissed
                             && instances.values.none { it.instant == next }
                             && latestInstance?.let { next.isAfter(it.instant) } ?: true
                 }
 
-                val repeating = task.schedule is Task.Schedule.Repeating
                 val searchFurther = repeating && instances.isEmpty() && filtered.isEmpty()
 
                 if (searchFurther && last != null) {
@@ -144,7 +150,13 @@ data class TaskSchedule(
         val scheduleChanged = task.schedule != newTask.schedule
         val stateChanged = task.isActive != newTask.isActive
 
-        return if (scheduleChanged || stateChanged) {
+        return if (scheduleChanged && newTask.schedule is Task.Schedule.Once) {
+            copy(
+                task = newTask,
+                instances = emptyMap(),
+                dismissed = emptyList()
+            )
+        } else if (scheduleChanged || stateChanged) {
             val pastInstances = instances.filterValues { instance -> instance.execution().isBefore(now) }
             copy(
                 task = newTask,

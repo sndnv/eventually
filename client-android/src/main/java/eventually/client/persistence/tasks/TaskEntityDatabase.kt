@@ -10,15 +10,21 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import eventually.client.persistence.Converters
 import org.jetbrains.annotations.TestOnly
 
-@Database(entities = [TaskEntity::class], version = 2, exportSchema = true)
+@Database(entities = [TaskEntity::class], version = 3, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class TaskEntityDatabase : RoomDatabase() {
     abstract fun dao(): TaskEntityDao
 
     companion object {
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
+        val MIGRATION_1_2: Migration = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE tasks ADD COLUMN color INTEGER NULL")
+            }
+        }
+
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE tasks ADD COLUMN executionAlarm INTEGER NOT NULL DEFAULT 0")
             }
         }
 
@@ -45,7 +51,7 @@ abstract class TaskEntityDatabase : RoomDatabase() {
         private fun build(context: Context, database: String) =
             Room
                 .databaseBuilder(context.applicationContext, TaskEntityDatabase::class.java, database)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }

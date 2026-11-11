@@ -1,5 +1,6 @@
 package eventually.client.persistence.tasks
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import eventually.core.model.Task
@@ -15,5 +16,7 @@ data class TaskEntity(
     val schedule: Task.Schedule,
     val contextSwitch: Duration,
     val isActive: Boolean,
-    val color: Int?
+    val color: Int?,
+    @ColumnInfo(defaultValue = "0")
+    val executionAlarm: Boolean = false
 )

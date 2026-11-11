@@ -79,6 +79,11 @@ fun SettingsScreen(preferences: SharedPreferences, onBack: () -> Unit) {
         Settings.Keys.PostponeLength,
         Settings.Defaults.PostponeLength
     )
+    val alarmTimeout = rememberStringPreference(
+        preferences,
+        Settings.Keys.AlarmTimeout,
+        Settings.Defaults.AlarmTimeout
+    )
     val dismissedRetention = rememberStringPreference(
         preferences,
         Settings.Keys.DismissedRetention,
@@ -151,6 +156,8 @@ fun SettingsScreen(preferences: SharedPreferences, onBack: () -> Unit) {
                 category(R.string.settings_category_other)
 
                 number(postponeLength, R.string.settings_postpone_length_title, R.plurals.settings_postpone_length_hint)
+
+                number(alarmTimeout, R.string.settings_alarm_timeout_title, R.plurals.settings_alarm_timeout_hint)
 
                 category(R.string.settings_category_dismissed)
 

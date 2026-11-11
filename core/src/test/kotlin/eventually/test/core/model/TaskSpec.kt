@@ -320,5 +320,20 @@ class TaskSpec : WordSpec({
 
             e.message shouldBe ("At least one day of the week is required for a repeating schedule")
         }
+
+        "not use an execution alarm by default" {
+            val task = Task(
+                id = 0,
+                name = "test-task",
+                description = "test-description",
+                goal = "test-goal",
+                schedule = Task.Schedule.Once(instant = Instant.now()),
+                contextSwitch = Duration.ofMinutes(5),
+                isActive = true,
+                color = null
+            )
+
+            task.executionAlarm shouldBe (false)
+        }
     }
 })

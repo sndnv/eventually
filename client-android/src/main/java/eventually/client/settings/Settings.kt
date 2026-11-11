@@ -25,6 +25,11 @@ object Settings {
         return Duration.ofMinutes(size)
     }
 
+    fun SharedPreferences?.getAlarmTimeout(): Duration {
+        val minutes = (this?.getString(Keys.AlarmTimeout, Defaults.AlarmTimeout) ?: Defaults.AlarmTimeout).toLong()
+        return Duration.ofMinutes(minutes)
+    }
+
     fun SharedPreferences?.getDismissedRetention(): Duration {
         val days = (this?.getString(Keys.DismissedRetention, Defaults.DismissedRetention)
             ?: Defaults.DismissedRetention).toLong()
@@ -92,6 +97,7 @@ object Settings {
         const val ShowAllInstances: String = "show_all_instances"
         const val DismissedRetention: String = "dismissed_retention"
         const val DismissedLimit: String = "dismissed_limit"
+        const val AlarmTimeout: String = "alarm_timeout"
 
         val SummaryConfig: Set<String> = setOf(SummarySize, DismissedRetention, DismissedLimit)
     }
@@ -106,6 +112,7 @@ object Settings {
         const val ShowAllInstances: Boolean = false
         const val DismissedRetention: String = "30"
         const val DismissedLimit: String = "100"
+        const val AlarmTimeout: String = "10"
     }
 
     sealed class DateTimeFormat {

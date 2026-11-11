@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import eventually.client.settings.Settings
 import eventually.client.settings.Settings.defaultPreferences
+import eventually.client.settings.Settings.getAlarmTimeout
 import eventually.client.settings.Settings.getDateTimeFormat
 import eventually.client.settings.Settings.getDismissedLimit
 import eventually.client.settings.Settings.getDismissedRetention
@@ -151,6 +152,23 @@ class SettingsSpec {
 
         val expectedPostponeLength = Duration.ofMinutes(42)
         assertThat(preferences.getPostponeLength(), equalTo((expectedPostponeLength)))
+    }
+
+    @Test
+    fun supportRetrievingDefaultAlarmTimeout() {
+        val preferences = mockk<SharedPreferences>()
+        every { preferences.getString(Settings.Keys.AlarmTimeout, Settings.Defaults.AlarmTimeout) } returns null
+
+        assertThat(preferences.getAlarmTimeout(), equalTo(Duration.ofMinutes(10)))
+        assertThat(null.getAlarmTimeout(), equalTo(Duration.ofMinutes(10)))
+    }
+
+    @Test
+    fun supportRetrievingUserDefinedAlarmTimeout() {
+        val preferences = mockk<SharedPreferences>()
+        every { preferences.getString(Settings.Keys.AlarmTimeout, Settings.Defaults.AlarmTimeout) } returns "3"
+
+        assertThat(preferences.getAlarmTimeout(), equalTo(Duration.ofMinutes(3)))
     }
 
     @Test

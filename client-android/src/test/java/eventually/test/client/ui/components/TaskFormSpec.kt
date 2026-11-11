@@ -13,6 +13,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import eventually.client.R
 import eventually.client.settings.Settings
+import eventually.client.ui.components.FullScreenAlarms
 import eventually.client.ui.components.ScheduleType
 import eventually.client.ui.components.TaskForm
 import eventually.client.ui.components.TaskFormError
@@ -89,6 +91,7 @@ class TaskFormSpec {
         textField("15").assertExists()
         composeRule.onNodeWithText("minutes").assertExists()
         composeRule.onNodeWithText("Calendar Event Color").assertExists()
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).assertIsOff()
     }
 
     @Test
@@ -330,6 +333,7 @@ class TaskFormSpec {
         click("minutes")
         click("seconds")
         composeRule.onNode(isToggleable() and hasText("Enabled")).performScrollTo().performClick()
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).performScrollTo().performClick()
         click("Create")
 
         assertThat(
@@ -354,7 +358,8 @@ class TaskFormSpec {
                         ),
                         contextSwitch = Duration.ofSeconds(30),
                         isActive = false,
-                        color = null
+                        color = null,
+                        executionAlarm = true
                     )
                 )
             )
@@ -439,6 +444,49 @@ class TaskFormSpec {
     }
 
     @Test
+    fun promptForFullScreenAlarmsWhenNotAllowed() {
+        var requested = 0
+        val state = TaskFormState.of(task = null, default = default, defaultColor = defaultColor)
+        state.expanded = true
+
+        showForm(state = state, fullScreenAlarms = FullScreenAlarms(allowed = false) { requested++ })
+
+        composeRule.onNodeWithText(FullScreenAlarmsDenied).assertDoesNotExist()
+
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).performScrollTo().performClick()
+        composeRule.onNodeWithText(FullScreenAlarmsDenied)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
+        composeRule.onNodeWithContentDescription("Allow full-screen alarms").assertExists()
+
+        click("Allow")
+        assertThat(requested, equalTo(1))
+
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).performScrollTo().performClick()
+        composeRule.onNodeWithText(FullScreenAlarmsDenied).assertDoesNotExist()
+    }
+
+    @Test
+    fun notPromptForFullScreenAlarmsWhenAllowed() {
+        val state = TaskFormState.of(task = null, default = default, defaultColor = defaultColor)
+        state.expanded = true
+        state.executionAlarm = true
+
+        showForm(state = state, fullScreenAlarms = FullScreenAlarms(allowed = true) {})
+
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).performScrollTo().assertIsOn()
+        composeRule.onNodeWithText(FullScreenAlarmsDenied).assertDoesNotExist()
+    }
+
+    @Test
+    fun allowFullScreenAlarmsBeforeAndroid14() {
+        showNewTask()
+        expand()
+
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).performScrollTo().performClick()
+        composeRule.onNodeWithText(FullScreenAlarmsDenied).assertDoesNotExist()
+    }
+
+    @Test
     fun keepInputWhenRecreated() {
         val restorationTester = StateRestorationTester(composeRule)
 
@@ -458,12 +506,14 @@ class TaskFormSpec {
         textField("Task name").performTextReplacement("test-task")
         click("Repeating")
         expand()
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).performScrollTo().performClick()
 
         restorationTester.emulateSavedInstanceStateRestore()
 
         textField("test-task").assertExists()
         composeRule.onNodeWithText("Repeating").assertIsSelected()
         composeRule.onNodeWithText("Description (optional)").assertExists()
+        composeRule.onNode(isToggleable() and hasText(ExecutionAlarm)).performScrollTo().assertIsOn()
     }
 
     @Test
@@ -642,7 +692,8 @@ class TaskFormSpec {
                 ),
                 contextSwitch = Duration.ofHours(1),
                 isActive = false,
-                color = null
+                color = null,
+                executionAlarm = true
             ),
             Task(
                 id = 3,
@@ -735,6 +786,24 @@ class TaskFormSpec {
         }
     }
 
+    private fun showForm(state: TaskFormState, fullScreenAlarms: FullScreenAlarms) {
+        composeRule.setContent {
+            EventuallyTheme {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    TaskForm(
+                        state = state,
+                        goals = emptyList(),
+                        dateTimeFormat = Settings.DateTimeFormat.Iso,
+                        firstDayOfWeek = DayOfWeek.MONDAY,
+                        operation = R.string.existing_task_update_action,
+                        onOperation = {},
+                        fullScreenAlarms = fullScreenAlarms
+                    )
+                }
+            }
+        }
+    }
+
     private fun textField(text: String): SemanticsNodeInteraction =
         composeRule.onNode(
             hasSetTextAction() and (hasText(text) or hasAnyDescendant(hasText(text))),
@@ -794,6 +863,9 @@ class TaskFormSpec {
 
     companion object {
         private const val Landscape: String = "w800dp-h360dp-land"
+        private const val ExecutionAlarm: String = "Alarm when due"
+        private const val FullScreenAlarmsDenied: String =
+            "Full-screen alarms are not allowed; alarms will only show as notifications"
         private val NarrowWidth = 360.dp
     }
 }

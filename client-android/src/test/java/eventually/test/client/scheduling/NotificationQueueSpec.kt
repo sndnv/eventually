@@ -1,13 +1,17 @@
 package eventually.test.client.scheduling
 
 import android.app.AlarmManager
+import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import eventually.client.persistence.notifications.NotificationEntity
 import eventually.client.persistence.notifications.NotificationRepository
+import eventually.client.scheduling.NotificationManagerExtensions
 import eventually.client.scheduling.NotificationQueue
+import eventually.client.settings.Settings
+import eventually.client.settings.Settings.defaultPreferences
 import eventually.core.model.Task
 import eventually.core.model.Task.Schedule.Repeating.Interval.Companion.toInterval
 import eventually.core.model.TaskInstance
@@ -17,6 +21,7 @@ import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.equalTo
@@ -250,6 +255,100 @@ class NotificationQueueSpec {
         confirmVerified(model)
         confirmVerified(alarmManager)
         confirmVerified(notificationManager)
+    }
+
+    @Test
+    fun releaseExecutionAlarms() {
+        val model = mockk<NotificationRepository>()
+        coEvery { model.put(task = any(), instance = any(), type = any()) } returns 42
+        coEvery { model.delete(task = any(), instance = any()) } returns Unit
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.defaultPreferences().edit().putString(Settings.Keys.AlarmTimeout, "7").commit()
+
+        val alarmTask = task.copy(executionAlarm = true)
+
+        val notification = slot<Notification>()
+        val triggerAt = slot<Long>()
+        val created = slot<PendingIntent>()
+        val removed = slot<PendingIntent>()
+
+        val alarmManager = mockk<AlarmManager>()
+        justRun { alarmManager.setExactAndAllowWhileIdle(any(), capture(triggerAt), capture(created)) }
+        justRun { alarmManager.cancel(capture(removed)) }
+
+        val notificationManager = mockk<NotificationManager>()
+        justRun { notificationManager.notify(any(), capture(notification)) }
+        justRun { notificationManager.cancel(any()) }
+
+        val before = Instant.now()
+
+        runBlocking {
+            NotificationQueue()
+                .apply { enqueue(listOf(SchedulerOps.Notification.PutInstanceExecutionNotification(alarmTask, instance))) }
+                .release(context, alarmManager, notificationManager, model)
+        }
+
+        val after = Instant.now()
+
+        assertThat(
+            notification.captured.channelId,
+            equalTo(NotificationManagerExtensions.Config.Default.instanceExecutionAlarmChannel.id)
+        )
+        assertThat(triggerAt.captured >= before.plus(Duration.ofMinutes(7)).toEpochMilli(), equalTo(true))
+        assertThat(triggerAt.captured <= after.plus(Duration.ofMinutes(7)).toEpochMilli(), equalTo(true))
+
+        runBlocking {
+            NotificationQueue()
+                .apply { enqueue(listOf(SchedulerOps.Notification.DeleteInstanceNotifications(alarmTask.id, instance.id))) }
+                .release(context, alarmManager, notificationManager, model)
+        }
+
+        assertThat(removed.captured, equalTo(created.captured))
+
+        coVerify(exactly = 1) { model.put(task = alarmTask, instance = instance, type = "execution") }
+        coVerify(exactly = 1) { model.delete(task = alarmTask.id, instance = instance.id) }
+
+        verify(exactly = 1) { alarmManager.setExactAndAllowWhileIdle(any(), any(), any()) }
+        verify(exactly = 1) { alarmManager.cancel(any<PendingIntent>()) }
+
+        verify(exactly = 1) { notificationManager.notify(any(), any()) }
+        verify(exactly = 2) { notificationManager.cancel(any()) }
+
+        confirmVerified(model)
+        confirmVerified(alarmManager)
+        confirmVerified(notificationManager)
+    }
+
+    @Test
+    fun releaseExecutionNotificationsForTasksWithoutAlarms() {
+        val model = mockk<NotificationRepository>()
+        coEvery { model.put(task = any(), instance = any(), type = any()) } returns 42
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val notification = slot<Notification>()
+
+        val alarmManager = mockk<AlarmManager>()
+
+        val notificationManager = mockk<NotificationManager>()
+        justRun { notificationManager.notify(any(), capture(notification)) }
+
+        runBlocking {
+            NotificationQueue()
+                .apply { enqueue(listOf(executionNotification)) }
+                .release(context, alarmManager, notificationManager, model)
+        }
+
+        assertThat(
+            notification.captured.channelId,
+            equalTo(NotificationManagerExtensions.Config.Default.instanceExecutionChannel.id)
+        )
+
+        coVerify(exactly = 1) { model.put(task = task, instance = instance, type = "execution") }
+
+        confirmVerified(model)
+        confirmVerified(alarmManager)
     }
 
     private val task = Task(
